@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+	<script src="/socket.io/socket.io.js"></script>
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+	<link rel="stylesheet" href="/stylesheets/jquery.mobile-1.1.1.min.css" />
+	<script src="/javascripts/jquery-1.7.1.min.js"></script>
+	<script src="/javascripts/jquery.mobile-1.1.1.min.js"></script>
+    <script src="/javascripts/underscore-min.js"></script>
+    <script src="/javascripts/backbone-min.js"></script>   
+	<script>
+		var mapId = '<%=mapId%>';
+		var socket = io.connect('');
+		var user = null;
+		var nameView = null;
+		var userCollectin = null;
+
+		
+		socket.on('userClientUpdate', function (data) {
+			console.log(data);
+			userCollection.addUpdate(JSON.parse(data));
+		});
+		socket.on('usersClientUpdate', function (data) {
+			console.log(data);
+			users = JSON.parse(data);
+			console.log(users);
+			for ( id in users) {
+				userCollection.addUpdate(users[id]);
+			}
+		});
+
+
+		// make underscore js use {{ }}
+		_.templateSettings = {
+			interpolate : /\{\{(.+?)\}\}/g
+		};
+
+		// we should generate this server side
+		function generateId() {
+			var time = (new Date()).getTime();
+			var rand = Math.floor((Math.random()*10000));
+			return time.toString(16)+":"+rand.toString(16);
+		}
+
+	
+		UserV1 = Backbone.Model.extend({
+			initialize: function(){
+			   this.on('change', 
+					function(user) {
+						setUserCookie(user);
+						socket.emit('userUpdate', user.toJSON());
+						return true;
+					}, this);
+			},
+			
+			defaults: {
+				name: 'anonymous',
+				id: 0,
+				pos: [],
+				lastUpdate:  null,
+				obejctVersion: 1
+			}
+		});
+	
+		var UserCollection = Backbone.Collection.extend({
+			model: UserV1,
+			
+			addUpdate: function(m) {
+				if (this.get(m.id) == undefined) this.add(m);
+				else this.get(m.id).set(m);
+			}
+		});
+	
+		NameLiView = Backbone.View.extend({
+			initialize: function() {
+				this.model.bind('change', this.render, this);
+				this.model.bind('destroy', this.remove, this);
+			},
+			
+			tagName:  "li",
+			
+			render: function(event){
+				var templateNoPos = _.template( "{{name}}");
+				var modelJson = this.model.toJSON();
+				var templateHasPos = _.template( "{{name}}, {{pos.coords.latitude}}, {{pos.coords.longitude}} {{pos.timestamp}}");
+				
+				if (modelJson.pos != undefined) this.$el.html(templateHasPos(modelJson));
+				else this.$el.html(templateNoPos(modelJson));
+				
+				return this;
+			}
+		});
+	
+		NameLiViews =  Backbone.View.extend({
+			tagName: 'ul',
+
+			events: {
+				// only whole collection events (like table sorting)
+				// each child view has it's own events
+			},
+			
+			initialize: function()	{
+				this._NameLiViews = {}; // view chache for further reuse
+				//_(this).bindAll('add');
+				this.collection.bind('add', this.add, this);
+			},
+			
+			render: function()	{	
+				// some collection rendering related stuff
+				// like appending <table> or <ul> elements
+
+				return this;
+			},
+
+			add: function(m) {
+				var nameLiView = new NameLiView({
+					model: m,
+					
+				});
+
+				// cache the view
+				this._NameLiViews[m.get('id')] = nameLiView;
+				
+				// single model rendering
+				// like appending <tr> or <li> elements
+				this.$el.append(nameLiView.render().el); 
+			}
+		});
+	
+		NameView = Backbone.View.extend({
+			initialize: function() {
+				this.model.bind('change', this.render, this);
+			},
+			
+			render: function(event) {
+				var template = _.template( "{{name}}");
+				this.$el.html(template(this.model.toJSON()));
+				return this;
+			}
+		});
+	
+		// just use View to update jqm object
+		NameEditView = Backbone.View.extend({
+			initialize: function() {
+				this.model.bind('change', this.render, this);
+			},
+			
+			events: {
+				 "change":   "saveName",
+			},
+			
+			render: function(event){
+				this.$el.val(this.model.get("name"));
+				return this;
+			},
+			
+			saveName: function(event) {
+				this.model.set({'name':this.$el.val()}); 
+			}
+		});
+
+	  
+		function getLocation() {
+			var loc = null;
+			if (navigator.geolocation) {
+				loc = navigator.geolocation.getCurrentPosition( 
+					function(pos) {
+						user.set({'pos': pos}); 
+					}, showError);
+			} else {
+				$('#demo').html("Geolocation is not supported by this browser.");
+			}
+		}
+				
+		function showError(error) {
+			 switch(error.code) {
+				case error.PERMISSION_DENIED:
+				alert("User denied the request for Geolocation.");
+				break;
+			case error.POSITION_UNAVAILABLE:
+				alert("Location information is unavailable.");
+				break;
+			case error.TIMEOUT:
+				alert("The request to get user location timed out.");
+				break;
+			case error.UNKNOWN_ERROR:
+				alert("An unknown error occurred.");
+				break;
+			}
+		}
+		  
+		function getCookie(c_name) {
+			var i,x,y,ARRcookies=document.cookie.split(";");
+			for (i=0;i<ARRcookies.length;i++) {
+				x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
+				y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
+				x=x.replace(/^\s+|\s+$/g,"");
+				if (x==c_name) {
+					return unescape(y);
+				}
+			}
+		}
+		
+		function setCookie(c_name,value,exdays) {
+			var exdate=new Date();
+			exdate.setDate(exdate.getDate() + exdays);
+			var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+			document.cookie=c_name + "=" + c_value;
+		}
+		
+		function setUserCookie(user) {
+			setCookie('oMap_User',JSON.stringify(user.toJSON()),10000);
+		}
+		 
+		function init() {
+			var cookie = getCookie('oMap_User');
+			if (cookie == undefined || cookie == null) {
+				user = new UserV1({id: generateId(), pos: null, 'mapId': mapId});
+				setUserCookie(user);
+			} else {
+				userJson = JSON.parse(cookie);
+				userJson.mapId = mapId;
+				user = new UserV1(userJson);
+				$('#username').val(user.get("name"));
+				//alert('here 3');
+			}
+			userCollection = new UserCollection();
+			nameView = new NameView({model: user, el: $("#user")});
+			nameEditView = new NameEditView({model: user, el: $("#editname")});
+			nameLiViews = new NameLiViews({collection: userCollection, el: $("#userColl")});
+			getLocation();
+		}
+				
+		$(function() {
+			init();
+			$('#save-button').click( function () {
+			console.log('here' + $('#mapIdEdit').val() + " " + mapId);
+				if ( mapId != $('#mapIdEdit').val()) window.url = "/m" + $('#mapIdEdit').val();
+			})
+		});
+		
+	</script>
+  </head>
+  <body>
+  
+	<div id="index" data-role="page">
+		<div data-role="content">	
+			<p>Welcome to <%= title %></p>
+			<ul id="userColl"></ul>
+		</div>
+		<div data-role="footer" data-position="fixed">
+				<strong>MAP ID: <%=mapId%></strong>
+				<strong>YOUR ID:</strong> <span id="user">test</span> 
+				<a href="#inputs" data-role="button" data-transition="slide" data-mini="true" data-inline="true" data-icon="gear">edit</a>
+				<a href="#why" data-role="button" data-transition="slide" data-mini="true" data-inline="true" data-icon="info">Info</a>
+		</div>
+	</div>
+	
+	<div data-role="page" id="inputs">
+		<div data-role="content">
+			Change Map ID:
+			<input name="mapIdEdit" data-mini="true" data-inline="true" id="mapIdEdit" value="<%=mapId%>" />
+			<br />
+			Choose a different id: 
+			<input name="editname" data-mini="true" data-inline="true" id="editname" value="" />
+			<a href="#" data-role="button" data-mini="true" data-inline="true" data-rel="back" id="save-button">Save</a>
+		</div>
+	</div>
+	
+	<div data-role="page" id="why">
+		<div data-role="content">
+			Where are you? It's a question the comes up often with my friends. Firing up Google Latitude 
+			and other location apps worked great, that is when my friends had it installed....<br />
+			<br />
+			Using the CB radios of my youth as an inspiration, maybe just knowing the channel was enough to start communicating. 
+			Just share the unique url (much like a channel) and browser will start communicating your location. <br />
+			<br />
+			<a href="#" data-role="button" data-mini="true" data-inline="true" data-rel="back" id="why-back-button">Back</a>
+		</div>
+	</div>
+  </body>
+</html>
