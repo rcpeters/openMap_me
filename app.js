@@ -57,7 +57,7 @@ io.sockets.on('connection', function (socket) {
 		    for (id in users) {
 				(function (id) {
 					mapProvider.isActive(id, function (test) {
-						if (test) clients[id].volatile.emit('usersClientUpdate',JSON.stringify(users));
+						if (test) clients[id].emit('usersClientUpdate',JSON.stringify(users));
 					});
 				})(id);
 			}

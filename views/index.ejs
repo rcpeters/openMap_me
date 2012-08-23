@@ -82,11 +82,11 @@
 			tagName:  "li",
 			
 			render: function(event){
-				var templateNoPos = _.template( "{{name}}");
 				var modelJson = this.model.toJSON();
+				var templateNoPos = _.template( "{{name}}");
 				var templateHasPos = _.template( "{{name}}, {{pos.coords.latitude}}, {{pos.coords.longitude}} {{pos.timestamp}}");
 				
-				if (modelJson.pos != undefined) this.$el.html(templateHasPos(modelJson));
+				if (modelJson.pos != undefined && modelJson.pos.coords != undefined) this.$el.html(templateHasPos(modelJson));
 				else this.$el.html(templateNoPos(modelJson));
 				
 				return this;
@@ -162,15 +162,27 @@
 		});
 
 	  
-		function getLocation() {
+		function pollUserInfo() {
+			var notInUsers = userCollection.get(user.get('id')) == undefined;
+
 			var loc = null;
+
 			if (navigator.geolocation) {
 				loc = navigator.geolocation.getCurrentPosition( 
 					function(pos) {
-						user.set({'pos': pos}); 
+						if (pos != null) {
+							var coordsChanged = user.get("pos") == undefined || user.get("pos") == null || JSON.stringify(pos.coords) != JSON.stringify(user.get("pos").coords);
+							if (coordsChanged || notInUsers) {
+								user.set({'pos': pos});
+							}
+						}
+						
 					}, showError);
 			} else {
-				$('#demo').html("Geolocation is not supported by this browser.");
+				if (notInUsers) {
+					alert('here');
+					user.set({'pos': null});
+				}
 			}
 		}
 				
@@ -222,6 +234,8 @@
 			} else {
 				userJson = JSON.parse(cookie);
 				userJson.mapId = mapId;
+				// the location from cookies is old, delete it
+				delete(userJson.coords);
 				user = new UserV1(userJson);
 				$('#username').val(user.get("name"));
 				//alert('here 3');
@@ -230,7 +244,8 @@
 			nameView = new NameView({model: user, el: $("#user")});
 			nameEditView = new NameEditView({model: user, el: $("#editname")});
 			nameLiViews = new NameLiViews({collection: userCollection, el: $("#userColl")});
-			getLocation();
+			pollUserInfo();
+			setInterval("pollUserInfo()",15000);
 		}
 				
 		$(function() {
