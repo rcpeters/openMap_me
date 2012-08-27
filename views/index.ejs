@@ -164,12 +164,12 @@
 	  
 		function pollUserInfo() {
 			var notInUsers = userCollection.get(user.get('id')) == undefined;
-
 			var loc = null;
-
 			if (navigator.geolocation) {
+				console.log("pollUserInfo navigator.geolocation");
 				loc = navigator.geolocation.getCurrentPosition( 
 					function(pos) {
+						console.log("inside getCurrentPositionCallBack");
 						if (pos != null) {
 							var coordsChanged = user.get("pos") == undefined || user.get("pos") == null || JSON.stringify(pos.coords) != JSON.stringify(user.get("pos").coords);
 							if (coordsChanged || notInUsers) {
@@ -178,7 +178,9 @@
 						}
 						
 					}, showError);
+				console.log(loc);
 			} else {
+				console.log("pollUserInfo navigator.geolocation else");
 				if (notInUsers) {
 					alert('here');
 					user.set({'pos': null});
@@ -187,7 +189,7 @@
 		}
 				
 		function showError(error) {
-			 switch(error.code) {
+			switch(error.code) {
 				case error.PERMISSION_DENIED:
 				alert("User denied the request for Geolocation.");
 				break;
@@ -201,6 +203,7 @@
 				alert("An unknown error occurred.");
 				break;
 			}
+			console.log(error);
 		}
 		  
 		function getCookie(c_name) {
@@ -231,6 +234,7 @@
 			if (cookie == undefined || cookie == null) {
 				user = new UserV1({id: generateId(), pos: null, 'mapId': mapId});
 				setUserCookie(user);
+				console.log("init new user");
 			} else {
 				userJson = JSON.parse(cookie);
 				userJson.mapId = mapId;
@@ -238,8 +242,9 @@
 				delete(userJson.coords);
 				user = new UserV1(userJson);
 				$('#username').val(user.get("name"));
-				//alert('here 3');
+				console.log("init user from cookie");
 			}
+			console.log(user);
 			userCollection = new UserCollection();
 			nameView = new NameView({model: user, el: $("#user")});
 			nameEditView = new NameEditView({model: user, el: $("#editname")});
