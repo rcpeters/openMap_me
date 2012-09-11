@@ -42,26 +42,44 @@ var server = http.createServer(app).listen(app.get('port'), function(){
  
 var io = require('socket.io').listen(server);
 
+function emitUsersUpdate(mapId) {
+	mapProvider.getMap(mapId,
+	function(map) {
+		console.log("mmmmmmmmmmmmmmmmmmmm");
+		console.log(map);
+		console.log("ssssssssssssssssssss");
+		console.log(JSON.stringify(map));
+		var users = map.users;
+		for (uX in users) {
+			console.log("emit tooooooooooooooooo:" +users[uX].id)
+			clients[users[uX].id].emit('mapUpdate',JSON.stringify(map));
+		}
+	});
+};
+
 io.sockets.on('connection', function (socket) {
-  socket.on('getUsersByMapId', function (mapId) {
-	mapProvider.usersByMapId(mapId,
-		function(users) {
-			socket.emit('usersClientUpdate',JSON.stringify(users));
+	socket.on('initUser', function(data) {
+		mapProvider.createUser(data.mapId, function(user) {
+			clients[user.id] = socket;
+			socket.emit('initUser', JSON.stringify(user));
+			emitUsersUpdate(data.mapId);
 		});
-  });
-  socket.on('userUpdate', function (user) {
-    clients[user.id] = socket;
-	mapProvider.saveUser(user,function () {
-		mapProvider.usersByMapId(user.mapId,
-		function(users) {
-		    for (id in users) {
-				(function (id) {
-					mapProvider.isActive(id, function (test) {
-						if (test) clients[id].emit('usersClientUpdate',JSON.stringify(users));
-					});
-				})(id);
-			}
+		//console.log("create user for map", data.mapId);
+	});
+  
+	socket.on('getUsersByMapId', function (mapId) {
+		mapProvider.getMap(mapId,
+			function(map) {
+				socket.emit('usersClientUpdate',JSON.stringify(map));
+			});
+	});
+  
+	socket.on('userUpdate', function (data) {
+		var user = data.user;
+		var mapId = data.mapId; 
+		clients[user.id] = socket;
+		mapProvider.updateUser(user, mapId, function () {
+			emitUsersUpdate(mapId)
 		});
 	});
-  });
 });

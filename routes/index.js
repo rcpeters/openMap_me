@@ -8,9 +8,17 @@ exports.index = function(req, res){
   console.log(req.url);
   var mapId = "";
   if (req.url.length > 3) mapId = req.url.substring(3);
-  else res.redirect('/m/' + Math.floor((Math.random()*10000)).toString(16));
-  var users = mapProvider.usersByMapId(mapId, function(users) {
-	res.render('index', { title: 'oMap.me', 'mapId': mapId, 'users': users});
+  
+  console.log(mapProvider.containsMap(mapId));
+  if (!mapProvider.containsMap(mapId)) {
+	mapProvider.createMap(function (map) {
+		res.redirect('/m/' + map.id)
+	});
+  }
+  
+  var map = mapProvider.getMap(mapId, function(map) {
+	console.log(map);
+	res.render('index', { title: 'oMap.me', 'map': map});
   });
   
 };

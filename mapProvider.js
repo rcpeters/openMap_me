@@ -1,30 +1,67 @@
 
 var MapProvider = function(){};
 
+MapProvider.prototype.maps = new Array();
+MapProvider.prototype.mapsById = new Array();
 
-MapProvider.prototype.users = [];
-MapProvider.prototype.activeMap = [];
+MapProvider.prototype.mapCount = 0;
 
-MapProvider.prototype.usersByMapId = function(mapId, callback) {
-	var users = this.users[mapId];
-	callback(users);
+MapProvider.prototype.getMap = function(mapId, callback) {
+	callback(this.mapsById[mapId]);
 };
 
-MapProvider.prototype.saveUser = function(user, callback) {
-	this.activeMap[user.id] = user.mapId; 
-	users = this.users[user.mapId];
-	if (users == undefined || users == null) users = this.users[user.mapId] = {};
-	users[user.id] = user;
-	callback(users);
+MapProvider.prototype.createMap = function(callback) {
+	var map = {
+		id: '',
+		users: [],
+		objectVersion: '1',
+	}
+	var count = this.maps.push(map);
+	var rand = Math.floor(Math.random() * 100);
+	map.id = "m" + (count + rand).toString(16);
+	this.mapsById[map.id] = map;
+	callback(map);
 };
 
-MapProvider.prototype.removeActive = function(user, callback) {
-	this.activeMap[user.id] = null;
-	callback();
+MapProvider.prototype.containsMap = function(mapId) {
+	if (this.mapsById[mapId] != null) return true;
+	return false;
 };
 
-MapProvider.prototype.isActive = function(uuId, callback) {
-	callback (!( this.activeMap[id] == undefined || this.activeMap[uuId] == null) );
+MapProvider.prototype.createUser = function(mapId, callback) {
+	var user = {
+		id : '',
+		name: '',
+		pos: '',
+		lastUpdate: '',
+		objectVersion: '1'
+	};
+	map = this.mapsById[mapId];
+	var length = map.users.length;
+	var uId = "U" + length + mapId;
+	user.name = length; 
+	user.id = uId;
+	this.mapsById[mapId].users.push(user);
+	console.log("create userrrrrrrrrrrrrrrrrr");
+	console.log(user);
+	callback(user);
+};
+
+MapProvider.prototype.updateUser = function(user, mapId, callback) {
+	var map = this.mapsById[mapId];
+	//map.users[user.id] = user;
+	var users = map.users;
+	console.log("before update");
+	console.log(map);
+    for (uX in users) {	
+		if (users[uX].id == user.id) {
+			users[uX] =  user;
+				console.log("after update");
+				console.log(map);
+
+			callback(user);
+		}
+	}
 };
 
 MapProvider.instance = null; 
@@ -32,7 +69,7 @@ MapProvider.instance = null;
 MapProvider.getInstance = function() {
 	if (this.instance == null) return this.instance = new MapProvider()
 	else return this.instance;
-}
+};
 
 //Singleton
 exports.MapProvider = MapProvider.getInstance();

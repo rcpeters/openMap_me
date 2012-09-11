@@ -11,26 +11,29 @@
     <script src="/javascripts/underscore-min.js"></script>
     <script src="/javascripts/backbone-min.js"></script>   
 	<script>
-		var mapId = '<%=mapId%>';
+		var M={}, V={}, C={};
+		var mapId = '<%=map.id%>';
+		var map = <%-JSON.stringify(map)%>;
+		
 		var socket = io.connect('');
 		var user = null;
 		var nameView = null;
-		var userCollectin = null;
-
+		var userCollection = null;
 		
-		socket.on('userClientUpdate', function (data) {
-			console.log(data);
-			userCollection.addUpdate(JSON.parse(data));
+		socket.on('initUser', function (data) {
+			initUser(JSON.parse(data));
 		});
-		socket.on('usersClientUpdate', function (data) {
-			console.log(data);
-			users = JSON.parse(data);
-			console.log(users);
-			for ( id in users) {
-				userCollection.addUpdate(users[id]);
+		
+		socket.on('mapUpdate', function (data) {
+			var map = JSON.parse(data);
+			var users = map.users;
+			console.log("mapUpdate");
+
+			for (uX in users) {
+				console.log("updating user" + users[uX].id + " " + users[uX].name);
+				userCollection.addUpdate(users[uX]);
 			}
 		});
-
 
 		// make underscore js use {{ }}
 		_.templateSettings = {
@@ -43,37 +46,51 @@
 			var rand = Math.floor((Math.random()*10000));
 			return time.toString(16)+":"+rand.toString(16);
 		}
-
 	
-		UserV1 = Backbone.Model.extend({
+		M.User = Backbone.Model.extend({
 			initialize: function(){
 			   this.on('change', 
-					function(user) {
-						setUserCookie(user);
-						socket.emit('userUpdate', user.toJSON());
+					function(m) {
+						//alert("change user" + m.id);
 						return true;
 					}, this);
+			}
+		});
+		
+		M.LocalUser = Backbone.Model.extend({
+			initialize: function(){
+			   this.on('change', 
+					function(m) {
+						this.emitUser();
+						return true;
+					}, this);
+				this.writeCookie();
 			},
-			
-			defaults: {
-				name: 'anonymous',
-				id: 0,
-				pos: [],
-				lastUpdate:  null,
-				obejctVersion: 1
+			writeCookie: function() {
+				setOMapCookie(this.get('name'), this.get('id'), mapId);
+				return true;
+			},
+			emitUser: function() {
+				setOMapCookie(this.get('name'), this.get('id'), mapId);
+				console.log("userUpdate" + this.get('id'));
+				socket.emit('userUpdate', {'user': this, 'mapId': mapId});
+				return true;
 			}
+			
 		});
 	
-		var UserCollection = Backbone.Collection.extend({
-			model: UserV1,
-			
+		M.Users = Backbone.Collection.extend({
+			model: M.User,
 			addUpdate: function(m) {
-				if (this.get(m.id) == undefined) this.add(m);
-				else this.get(m.id).set(m);
+				if (this.get(m.id) == undefined) { 
+					this.add(m);
+				} else {
+					this.get(m.id).set(m);
+				}
 			}
 		});
 	
-		NameLiView = Backbone.View.extend({
+		V.NameLi = Backbone.View.extend({
 			initialize: function() {
 				this.model.bind('change', this.render, this);
 				this.model.bind('destroy', this.remove, this);
@@ -93,7 +110,7 @@
 			}
 		});
 	
-		NameLiViews =  Backbone.View.extend({
+		V.NameLis =  Backbone.View.extend({
 			tagName: 'ul',
 
 			events: {
@@ -102,34 +119,31 @@
 			},
 			
 			initialize: function()	{
-				this._NameLiViews = {}; // view chache for further reuse
+				this.nameLiViews = {}; // view chache for further reuse
 				//_(this).bindAll('add');
-				this.collection.bind('add', this.add, this);
+				this.collection.bind('add', this.render, this);
+				this.collection.bind('change', this.render, this);
 			},
 			
 			render: function()	{	
-				// some collection rendering related stuff
-				// like appending <table> or <ul> elements
-
-				return this;
-			},
-
-			add: function(m) {
-				var nameLiView = new NameLiView({
-					model: m,
+				var colView = this;
+				this.collection.each(function (m) {
+					var curLiV = null;
+					if (colView.nameLiViews[m.id] == undefined) {
+						colView.nameLiViews[m.id] = new V.NameLi({
+							model: m
+						});
+						colView.$el.append(colView.nameLiViews[m.id].render().el);
+					}  else {
+						colView.nameLiViews[m.id].render();
+					}
 					
 				});
-
-				// cache the view
-				this._NameLiViews[m.get('id')] = nameLiView;
-				
-				// single model rendering
-				// like appending <tr> or <li> elements
-				this.$el.append(nameLiView.render().el); 
+				return this;
 			}
 		});
 	
-		NameView = Backbone.View.extend({
+		V.Name = Backbone.View.extend({
 			initialize: function() {
 				this.model.bind('change', this.render, this);
 			},
@@ -142,7 +156,7 @@
 		});
 	
 		// just use View to update jqm object
-		NameEditView = Backbone.View.extend({
+		V.NameEdit = Backbone.View.extend({
 			initialize: function() {
 				this.model.bind('change', this.render, this);
 			},
@@ -161,7 +175,6 @@
 			}
 		});
 
-	  
 		function pollUserInfo() {
 			var notInUsers = userCollection.get(user.get('id')) == undefined;
 			var loc = null;
@@ -173,7 +186,7 @@
 						if (pos != null) {
 							var coordsChanged = user.get("pos") == undefined || user.get("pos") == null || JSON.stringify(pos.coords) != JSON.stringify(user.get("pos").coords);
 							if (coordsChanged || notInUsers) {
-								user.set({'pos': pos});
+								//user.set({'pos': pos});
 							}
 						}
 						
@@ -182,8 +195,7 @@
 			} else {
 				console.log("pollUserInfo navigator.geolocation else");
 				if (notInUsers) {
-					alert('here');
-					user.set({'pos': null});
+					//user.set({'pos': null});
 				}
 			}
 		}
@@ -225,30 +237,57 @@
 			document.cookie=c_name + "=" + c_value;
 		}
 		
+		function setOMapCookie(username, uId, mapId) {
+			var cV = {};
+			cV.username = username;
+			cV.uId = uId;
+			cV.mapId = mapId;
+			setCookie('oMap', JSON.stringify(cV), 1000);
+		}
+		
+		function getOMapCookie() {
+			return getCookie('oMap');
+		}
+		
 		function setUserCookie(user) {
 			setCookie('oMap_User',JSON.stringify(user.toJSON()),10000);
 		}
 		 
 		function init() {
-			var cookie = getCookie('oMap_User');
-			if (cookie == undefined || cookie == null) {
-				user = new UserV1({id: generateId(), pos: null, 'mapId': mapId});
-				setUserCookie(user);
-				console.log("init new user");
-			} else {
-				userJson = JSON.parse(cookie);
-				userJson.mapId = mapId;
-				// the location from cookies is old, delete it
-				delete(userJson.coords);
-				user = new UserV1(userJson);
-				$('#username').val(user.get("name"));
-				console.log("init user from cookie");
+			var cookie = getOMapCookie();
+			var userId = null;
+			if (cookie) {	
+				var cV = JSON.parse(cookie);
+				userId = cV.uId;
 			}
-			console.log(user);
-			userCollection = new UserCollection();
-			nameView = new NameView({model: user, el: $("#user")});
-			nameEditView = new NameEditView({model: user, el: $("#editname")});
-			nameLiViews = new NameLiViews({collection: userCollection, el: $("#userColl")});
+			userCollection = new M.Users();
+			nameLiViews = new V.NameLis({collection: userCollection, el: $("#userColl")});
+			
+			var initCalled = false;
+			for ( uX in map.users) {
+				var tempU = map.users[uX];
+				if (tempU.id == userId) {
+					initUser(tempU);
+					var initCalled = true;
+				} 
+				userCollection.addUpdate(tempU);
+			}
+			if (!initCalled) {
+				console.log("initUser via server");
+				socket.emit("initUser", {'mapId':mapId});
+				
+			}
+			
+			
+			
+		}
+		
+		function initUser(u) {
+			user = new M.LocalUser(u);
+			nameView = new V.Name({model: user, el: $("#user")});
+			nameEditView = new V.NameEdit({model: user, el: $("#editname")});
+			nameView.render();
+			nameEditView.render();
 			pollUserInfo();
 			setInterval("pollUserInfo()",15000);
 		}
@@ -271,7 +310,7 @@
 			<ul id="userColl"></ul>
 		</div>
 		<div data-role="footer" data-position="fixed">
-				<strong>MAP ID: <%=mapId%></strong>
+				<strong>MAP ID: <%=map.id%></strong>
 				<strong>YOUR ID:</strong> <span id="user">test</span> 
 				<a href="#inputs" data-role="button" data-transition="slide" data-mini="true" data-inline="true" data-icon="gear">edit</a>
 				<a href="#why" data-role="button" data-transition="slide" data-mini="true" data-inline="true" data-icon="info">Info</a>
@@ -281,7 +320,7 @@
 	<div data-role="page" id="inputs">
 		<div data-role="content">
 			Change Map ID:
-			<input name="mapIdEdit" data-mini="true" data-inline="true" id="mapIdEdit" value="<%=mapId%>" />
+			<input name="mapIdEdit" data-mini="true" data-inline="true" id="mapIdEdit" value="<%=map.id%>" />
 			<br />
 			Choose a different id: 
 			<input name="editname" data-mini="true" data-inline="true" id="editname" value="" />
