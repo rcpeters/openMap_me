@@ -183,7 +183,6 @@
 		});
 
 		function pollUserInfo() {
-			var notInUsers = userCollection.get(user.get('id')) == undefined;
 			var loc = null;
 			if (navigator.geolocation) {
 				console.log("pollUserInfo navigator.geolocation");
@@ -192,19 +191,14 @@
 						console.log("inside getCurrentPositionCallBack");
 						if (pos != null) {
 							var coordsChanged = user.get("pos") == undefined || user.get("pos") == null || JSON.stringify(pos.coords) != JSON.stringify(user.get("pos").coords);
-							if (coordsChanged || notInUsers) {
-								//user.set({'pos': pos});
+							if (coordsChanged) {
+								user.set({'pos': pos});
 							}
 						}
 						
 					}, showError);
 				console.log(loc);
-			} else {
-				console.log("pollUserInfo navigator.geolocation else");
-				if (notInUsers) {
-					//user.set({'pos': null});
-				}
-			}
+			} 
 		}
 				
 		function showError(error) {
