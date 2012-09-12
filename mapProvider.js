@@ -60,14 +60,13 @@ MapProvider.prototype.getUCollection = function(callback) {
 
 
 MapProvider.prototype.createMap = function(callback) {
-	sequenceProvider.getNextS('test',function(error, seqObj) {
+	sequenceProvider.base36Counter('test',function(error, seqObj) {
 			if ( error ) {
-				console.log('SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq ');
-				console.log( error );
+				console.error( error );
 				callback( error );
 			} else {
-				console.log('SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq ');
-				console.log(seqObj);
+				console.error('SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq ');
+				console.error(seqObj);  
 			}
 	});
 

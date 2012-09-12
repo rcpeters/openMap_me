@@ -35,9 +35,8 @@ SequenceProvider.prototype.getNextS = function(sequenceId, callback) {
 			{'$inc': {"seq":1}},
 			{new: true, upsert:true},
 			function(error, data) {
-				console.log(data);
 				if ( error ) {
-					console.log( error );
+					console.error( error );
 					return;
 				}
 				callback(null, data);
@@ -45,6 +44,34 @@ SequenceProvider.prototype.getNextS = function(sequenceId, callback) {
 		);
 	});
 };
+
+SequenceProvider.prototype.counter = function(name, callback) {
+	this.getNextS(name,
+		function(error, seqObj) {
+			if ( error ) {
+				console.log( error );
+				callback( error );
+				return;
+			} 
+			callback(null, seqObj.seq);	
+	});
+};
+
+SequenceProvider.prototype.base36Counter = function(name, callback) {
+	this.getNextS(name,
+		function(error, seqObj) {
+			if ( error ) {
+				console.log( error );
+				callback( error );
+				return;
+			} 
+			callback(null, seqObj.seq.toString(36));	
+	});
+};
+
+
+
+
 
 SequenceProvider.instance = null; 
 
