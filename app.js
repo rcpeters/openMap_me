@@ -43,28 +43,31 @@ var server = http.createServer(app).listen(app.get('port'), function(){
 var io = require('socket.io').listen(server);
 
 function emitUsersUpdate(mapId) {
-	mapProvider.getMap(mapId,
-	function(map) {
-		console.log("mmmmmmmmmmmmmmmmmmmm");
-		console.log(map);
-		console.log("ssssssssssssssssssss");
-		console.log(JSON.stringify(map));
-		var users = map.users;
+	console.log('emit users[]');
+	mapProvider.getUsers(mapId,
+	function(users) {
 		for (uX in users) {
-			console.log("emit tooooooooooooooooo:" +users[uX].id)
-			clients[users[uX].id].emit('mapUpdate',JSON.stringify(map));
+			if (clients[users[uX].id]) clients[users[uX].id].emit('usersUpdate',JSON.stringify(users));
 		}
 	});
 };
 
 io.sockets.on('connection', function (socket) {
 	socket.on('initUser', function(data) {
-		mapProvider.createUser(data.mapId, function(user) {
-			clients[user.id] = socket;
-			socket.emit('initUser', JSON.stringify(user));
-			emitUsersUpdate(data.mapId);
-		});
-		//console.log("create user for map", data.mapId);
+		if (data.id) {
+			console.log('user id is ' +data.id);
+			mapProvider.getUser(data.id, function(error, user) {
+				clients[user.id] = socket;
+				socket.emit('initUser', JSON.stringify(user));
+				emitUsersUpdate(data.mapId);
+			});
+		} else {
+			mapProvider.createUser(data.mapId, function(error, user) {
+				clients[user.id] = socket;
+				socket.emit('initUser', JSON.stringify(user));
+				emitUsersUpdate(data.mapId);
+			});
+		}
 	});
   
 	socket.on('getUsersByMapId', function (mapId) {
@@ -78,8 +81,10 @@ io.sockets.on('connection', function (socket) {
 		var user = data.user;
 		var mapId = data.mapId; 
 		clients[user.id] = socket;
-		mapProvider.updateUser(user, mapId, function () {
-			emitUsersUpdate(mapId)
+		console.log("user update");
+		mapProvider.updateUser(user, mapId, function (error, user) {
+			if ( error ) console.log( error );
+			else emitUsersUpdate(mapId);
 		});
 	});
 });

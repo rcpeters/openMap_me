@@ -24,10 +24,9 @@
 			initUser(JSON.parse(data));
 		});
 		
-		socket.on('mapUpdate', function (data) {
-			var map = JSON.parse(data);
-			var users = map.users;
-			console.log("mapUpdate");
+		socket.on('usersUpdate', function (data) {
+			var users = JSON.parse(data);
+			console.log("usersUpdate");
 
 			for (uX in users) {
 				console.log("updating user" + users[uX].id + " " + users[uX].name);
@@ -258,27 +257,22 @@
 			var userId = null;
 			if (cookie) {	
 				var cV = JSON.parse(cookie);
-				userId = cV.uId;
+				if (mapId == cV.mapId) userId = cV.uId;
 			}
 			userCollection = new M.Users();
 			nameLiViews = new V.NameLis({collection: userCollection, el: $("#userColl")});
 			
-			var initCalled = false;
-			for ( uX in map.users) {
-				var tempU = map.users[uX];
-				if (tempU.id == userId) {
-					initUser(tempU);
-					var initCalled = true;
-				} 
-				userCollection.addUpdate(tempU);
-			}
-			if (!initCalled) {
-				console.log("initUser via server");
-				socket.emit("initUser", {'mapId':mapId});
-				
-			}
-			
-			
+//			var initCalled = false;
+//			for ( uX in map.users) {
+//				var tempU = map.users[uX];
+//				if (tempU.id == userId) {
+//					initUser(tempU);
+//					var initCalled = true;
+//				} 
+//				userCollection.addUpdate(tempU);
+//			}
+			console.log("initUser via server");
+			socket.emit("initUser", {'mapId': mapId, 'id':userId});
 			
 		}
 		
