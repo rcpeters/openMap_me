@@ -28,8 +28,9 @@ MapProvider.prototype.getCollection = function(collectionName, callback) {
 		if ( error ) {
 			console.log( error );		
 			callback( error );
+			return;
 		} 
-		else callback(null, collection);
+		callback(null, collection);
 	});
 };
 
@@ -38,8 +39,9 @@ MapProvider.prototype.getMCollection = function(callback) {
     if ( error ) {
 		console.log( error );
 		callback( error );
+		return;
 	} 
-    else callback(null, maps_collection);
+    callback(null, maps_collection);
   });
 };
 
@@ -48,8 +50,9 @@ MapProvider.prototype.getUCollection = function(callback) {
     if ( error ) {
 		console.log( error );		
 		callback( error );
+		return
 	} 
-    else callback(null, userCollection);
+    callback(null, userCollection);
   });
 };
 
@@ -72,17 +75,15 @@ MapProvider.prototype.createMap = function(callback) {
 			if ( error ) {
 				console.error( error );
 				callback( error );
-			} else {
-				console.error("errruelsadkflkasdjfklsdajfkljsdaf");
-				console.error(data);
-				if (!data || !data[0]) {
-					callback("no match for map");
-				} else {
-					var map = data[0];
-					map.id = map._id; // hack for now
-					callback(null, map);
-				} 
+				return;
 			}
+			if (!data || !data[0]) {
+				callback("no match for map");
+				return;
+			}
+			var map = data[0];
+			map.id = map._id; // hack for now
+			callback(null, map);
 		});
 	});
 };
@@ -102,12 +103,12 @@ MapProvider.prototype.getUsers = function(mId,callback) {
 			if ( error ) {
 				console.log( error );
 				callback( error );
-			} else {
-				for (x in data) {
-				data[x].id = data[x]._id;  //hack for now	
-				}
-				callback(null, data);
+				return;
 			}
+			for (x in data) {
+				data[x].id = data[x]._id;  //hack for now	
+			}
+			callback(null, data);
 		});
 	});
 	
@@ -128,15 +129,14 @@ MapProvider.prototype.getMap = function(mapId, callback) {
         maps_collection.findOne({_id: oBi}, function(error, map) {
 			if( error ) {
 				callback(error);
-			} else {	
-				console.log(map);
-				if (map == null) {
-					callback("maps is null");
-					return;
-				} 
-				map.id = map._id;
-				callback(null, map);
+				return;
 			}
+			if (map == null) {
+				callback("maps is null");
+				return;
+			} 
+			map.id = map._id;
+			callback(null, map);
         });
       }
     });
@@ -151,6 +151,7 @@ MapProvider.prototype.getUser = function(userId, callback) {
 				var oBi =  new ObjectID(userId);
 			} catch (err) {
 				callback(err);
+				return;
 			}
 			
 			user_collection.findOne(
@@ -159,12 +160,14 @@ MapProvider.prototype.getUser = function(userId, callback) {
 					if (error) {
 						console.log(error);
 						callback(error);
-					} else {	
-						console.log(user);
-						if (user == null) callback("user is null");
-						user.id = user._id;
-						callback(null, user);
+						return;
+					} 	
+					if (user == null) {
+						callback("user is null");
+						return;
 					}
+					user.id = user._id;
+					callback(null, user);
 				}
 			);
 		}
@@ -181,8 +184,11 @@ MapProvider.prototype.updateUser = function(user, mapId, callback) {
 			{'$set': user},
 			{new: true},
 			function(error, data) {
-				if ( error ) console.log( error );
-				else callback(null, data);
+				if ( error ) {
+					console.log( error );
+					return;
+				}
+				callback(null, data);
 			}
 		);
 	});
@@ -199,8 +205,11 @@ MapProvider.prototype.getNextS = function(sequenceId, callback) {
 			{new: true, upsert:true},
 			function(error, data) {
 				console.log(data);
-				if ( error ) console.log( error );
-				else callback(null, data);
+				if ( error ) {
+					console.log( error );
+					return;
+				}
+				callback(null, data);
 			}
 		);
 	});
