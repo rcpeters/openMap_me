@@ -69,10 +69,6 @@ SequenceProvider.prototype.base36Counter = function(name, callback) {
 	});
 };
 
-
-
-
-
 SequenceProvider.instance = null; 
 
 SequenceProvider.getInstance = function() {

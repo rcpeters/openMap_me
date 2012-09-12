@@ -58,34 +58,31 @@ MapProvider.prototype.getUCollection = function(callback) {
   });
 };
 
-
 MapProvider.prototype.createMap = function(callback) {
-	sequenceProvider.base36Counter('test',function(error, seqObj) {
+    mapProvider = this;
+	sequenceProvider.base36Counter('test',function(error, seq) {
 			if ( error ) {
 				console.error( error );
 				callback( error );
 			} else {
-				console.error('SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq ');
-				console.error(seqObj);  
+				mapProvider.getMCollection(function(error, mapColl) {
+					mapColl.insert({ id:seq, objectVersion: '0'}, {safe:true}, function(error, data) {
+						if ( error ) {
+							console.error( error );
+							callback( error );
+							return;
+						}
+						if (!data || !data[0]) {
+							callback("no match for map");
+							return;
+						}
+						var map = data[0];
+						callback(null, map);
+					});
+				});				
 			}
 	});
 
-	this.getMCollection(function(error, mapColl) {
-		mapColl.insert({objectVersion: '0'}, {safe:true}, function(error, data) {
-			if ( error ) {
-				console.error( error );
-				callback( error );
-				return;
-			}
-			if (!data || !data[0]) {
-				callback("no match for map");
-				return;
-			}
-			var map = data[0];
-			map.id = map._id; // hack for now
-			callback(null, map);
-		});
-	});
 };
 
 MapProvider.prototype.createUser = function(mId,callback) {
@@ -119,14 +116,7 @@ MapProvider.prototype.getMap = function(mapId, callback) {
       if( error ) {
 		callback(error);
       } else {
-		var oBi = null;
-		try {
-			var oBi =  new ObjectID(mapId);
-		} catch (err) {
-			callback(err);
-			return;
-		}
-        maps_collection.findOne({_id: oBi}, function(error, map) {
+        maps_collection.findOne({id: mapId}, function(error, map) {
 			if( error ) {
 				callback(error);
 				return;
@@ -135,7 +125,6 @@ MapProvider.prototype.getMap = function(mapId, callback) {
 				callback("maps is null");
 				return;
 			} 
-			map.id = map._id;
 			callback(null, map);
         });
       }
@@ -183,26 +172,6 @@ MapProvider.prototype.updateUser = function(user, mapId, callback) {
 			{'$set': user},
 			{new: true},
 			function(error, data) {
-				if ( error ) {
-					console.log( error );
-					return;
-				}
-				callback(null, data);
-			}
-		);
-	});
-};
-
-MapProvider.prototype.getNextS = function(sequenceId, callback) {
-	this.getSCollection(function(error, userColl) {
-		// should checkout findAndModify
-		userColl.findAndModify(
-			{_id: sequenceId},
-			[['_id', 'asc']],
-			{'$inc': {"seq":1}},
-			{new: true, upsert:true},
-			function(error, data) {
-				console.log(data);
 				if ( error ) {
 					console.log( error );
 					return;
