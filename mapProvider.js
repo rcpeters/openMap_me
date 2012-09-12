@@ -12,6 +12,28 @@ var MapProvider = function(host, port) {
 };
 
 MapProvider.prototype.getMCollection = function(callback) {
+	this.getCollection('maps', callback);
+};
+
+MapProvider.prototype.getSCollection = function(callback) {
+	this.getCollection('sequences', callback);
+};
+
+MapProvider.prototype.getUCollection = function(callback) {
+	this.getCollection('users', callback);
+};
+
+MapProvider.prototype.getCollection = function(collectionName, callback) {
+	this.db.collection(collectionName, function(error, collection) {
+		if ( error ) {
+			console.log( error );		
+			callback( error );
+		} 
+		else callback(null, collection);
+	});
+};
+
+MapProvider.prototype.getMCollection = function(callback) {
   this.db.collection('maps', function(error, maps_collection) {
     if ( error ) {
 		console.log( error );
@@ -33,14 +55,33 @@ MapProvider.prototype.getUCollection = function(callback) {
 
 
 MapProvider.prototype.createMap = function(callback) {
-	this.getMCollection(function(error, mapColl) {
-		mapColl.insert({objectVersion: '0'}, function(error, data) {
+/*	this.getNextS('test',function(error, seqObj) {
 			if ( error ) {
+				console.log('SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq ');
 				console.log( error );
 				callback( error );
 			} else {
-				data[0].id = data[0]._id; // hack for now
-				callback(null, data[0]);;
+				console.log('SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq ');
+				console.log(seqObj);
+			}
+	});
+	*/
+
+	this.getMCollection(function(error, mapColl) {
+		mapColl.insert({objectVersion: '0'}, {safe:true}, function(error, data) {
+			if ( error ) {
+				console.error( error );
+				callback( error );
+			} else {
+				console.error("errruelsadkflkasdjfklsdajfkljsdaf");
+				console.error(data);
+				if (!data || !data[0]) {
+					callback("no match for map");
+				} else {
+					var map = data[0];
+					map.id = map._id; // hack for now
+					callback(null, map);
+				} 
 			}
 		});
 	});
@@ -48,7 +89,7 @@ MapProvider.prototype.createMap = function(callback) {
 
 MapProvider.prototype.createUser = function(mId,callback) {
 	this.getUCollection(function(error, userColl) {
-		userColl.insert({mapId: mId, name: 'test', pos: '', lastUpdate: '', objectVersion: '1'}, function(error, data) {
+		userColl.insert({mapId: mId, name: 'test', pos: '', lastUpdate: '', objectVersion: '1'}, {safe:true}, function(error, data) {
 			data[0].id = data[0]._id; // hack for now
 			callback(null, data[0]);
 		});
@@ -82,8 +123,8 @@ MapProvider.prototype.getMap = function(mapId, callback) {
 			var oBi =  new ObjectID(mapId);
 		} catch (err) {
 			callback(err);
+			return;
 		}
-		
         maps_collection.findOne({_id: oBi}, function(error, map) {
 			if( error ) {
 				callback(error);
@@ -91,7 +132,8 @@ MapProvider.prototype.getMap = function(mapId, callback) {
 				console.log(map);
 				if (map == null) {
 					callback("maps is null");
-				}
+					return;
+				} 
 				map.id = map._id;
 				callback(null, map);
 			}
@@ -139,6 +181,24 @@ MapProvider.prototype.updateUser = function(user, mapId, callback) {
 			{'$set': user},
 			{new: true},
 			function(error, data) {
+				if ( error ) console.log( error );
+				else callback(null, data);
+			}
+		);
+	});
+};
+
+
+MapProvider.prototype.getNextS = function(sequenceId, callback) {
+	this.getSCollection(function(error, userColl) {
+		// should checkout findAndModify
+		userColl.findAndModify(
+			{_id: sequenceId},
+			[['_id', 'asc']],
+			{'$inc': {"seq":1}},
+			{new: true, upsert:true},
+			function(error, data) {
+				console.log(data);
 				if ( error ) console.log( error );
 				else callback(null, data);
 			}
