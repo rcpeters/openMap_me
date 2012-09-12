@@ -33,6 +33,14 @@
 				userCollection.addUpdate(users[uX]);
 			}
 		});
+		
+		socket.on('userUpdate', function (data) {
+			var user = JSON.parse(data);
+			console.log("userUpdate"); 
+			console.log("updating user" + user.id + " " + user.name);
+			userCollection.addUpdate(user);
+		});
+		
 
 		// make underscore js use {{ }}
 		_.templateSettings = {
@@ -261,19 +269,8 @@
 			}
 			userCollection = new M.Users();
 			nameLiViews = new V.NameLis({collection: userCollection, el: $("#userColl")});
-			
-//			var initCalled = false;
-//			for ( uX in map.users) {
-//				var tempU = map.users[uX];
-//				if (tempU.id == userId) {
-//					initUser(tempU);
-//					var initCalled = true;
-//				} 
-//				userCollection.addUpdate(tempU);
-//			}
 			console.log("initUser via server");
-			socket.emit("initUser", {'mapId': mapId, 'id':userId});
-			
+			socket.emit("initUser", {'mapId': mapId, 'id':userId});			
 		}
 		
 		function initUser(u) {

@@ -45,9 +45,19 @@ var io = require('socket.io').listen(server);
 function emitUsersUpdate(mapId) {
 	console.log('emit users[]');
 	mapProvider.getUsers(mapId,
-	function(users) {
+	function(error, users) {
 		for (uX in users) {
 			if (clients[users[uX].id]) clients[users[uX].id].emit('usersUpdate',JSON.stringify(users));
+		}
+	});
+};
+
+function emitUserUpdate(user,mapId) {
+	console.log('emit users[]');
+	mapProvider.getUsers(mapId,
+	function(error, users) {
+		for (uX in users) {
+			if (clients[users[uX].id]) clients[users[uX].id].emit('userUpdate',JSON.stringify(user));
 		}
 	});
 };
@@ -84,7 +94,7 @@ io.sockets.on('connection', function (socket) {
 		console.log("user update");
 		mapProvider.updateUser(user, mapId, function (error, user) {
 			if ( error ) console.log( error );
-			else emitUsersUpdate(mapId);
+			else emitUserUpdate(user,mapId);
 		});
 	});
 });
