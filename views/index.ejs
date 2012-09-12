@@ -15,15 +15,17 @@
 		var mapId = '<%=map.id%>';
 		var map = <%-JSON.stringify(map)%>;
 		
-		var socket = io.connect('');
+		var socket = io.connect();
 		var user = null;
+		var userId = null;
 		var nameView = null;
 		var userCollection = null;
+		var pollUserInfoInterval =  null;
 		
 		socket.on('initUser', function (data) {
 			initUser(JSON.parse(data));
 		});
-		
+				
 		socket.on('usersUpdate', function (data) {
 			var users = JSON.parse(data);
 			console.log("usersUpdate");
@@ -256,7 +258,6 @@
 		 
 		function init() {
 			var cookie = getOMapCookie();
-			var userId = null;
 			if (cookie) {	
 				var cV = JSON.parse(cookie);
 				if (mapId == cV.mapId) userId = cV.uId;
@@ -273,8 +274,19 @@
 			nameEditView = new V.NameEdit({model: user, el: $("#editname")});
 			nameView.render();
 			nameEditView.render();
-			pollUserInfo();
+			pollUserInfoInterval = pollUserInfo();
 			setInterval("pollUserInfo()",15000);
+			
+			socket.on('disconnect', function(data) {
+				console.log('disconnected disconnected disconnected disconnected disconnected disconnected disconnected ');
+				clearInterval(pollUserInfoInterval);
+			});
+
+			socket.on('connect', function(data) {
+				console.log('connected connected connected connected connected connected connected ');
+				pollUserInfoInterval = pollUserInfo();
+				socket.emit("initUser", {'mapId': mapId, 'id':userId});
+			});			
 		}
 				
 		$(function() {
