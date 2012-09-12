@@ -4,6 +4,8 @@ var Server = require('mongodb').Server;
 var BSON = require('mongodb').BSON;
 var ObjectID = require('mongodb').ObjectID;
 
+var sequenceProvider = require('./sequenceProvider').SequenceProvider;
+
 var MapProvider = function(host, port) {
   console.log("host is" + host);
   console.log("port is" + port);
@@ -58,7 +60,7 @@ MapProvider.prototype.getUCollection = function(callback) {
 
 
 MapProvider.prototype.createMap = function(callback) {
-/*	this.getNextS('test',function(error, seqObj) {
+	sequenceProvider.getNextS('test',function(error, seqObj) {
 			if ( error ) {
 				console.log('SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq SEq ');
 				console.log( error );
@@ -68,7 +70,6 @@ MapProvider.prototype.createMap = function(callback) {
 				console.log(seqObj);
 			}
 	});
-	*/
 
 	this.getMCollection(function(error, mapColl) {
 		mapColl.insert({objectVersion: '0'}, {safe:true}, function(error, data) {
@@ -153,7 +154,6 @@ MapProvider.prototype.getUser = function(userId, callback) {
 				callback(err);
 				return;
 			}
-			
 			user_collection.findOne(
 				{_id: oBi},
 				function(error, user) {
@@ -193,7 +193,6 @@ MapProvider.prototype.updateUser = function(user, mapId, callback) {
 		);
 	});
 };
-
 
 MapProvider.prototype.getNextS = function(sequenceId, callback) {
 	this.getSCollection(function(error, userColl) {
