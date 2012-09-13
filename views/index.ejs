@@ -245,20 +245,16 @@
 			cV.username = username;
 			cV.uId = uId;
 			cV.mapId = mapId;
-			setCookie('oMap', JSON.stringify(cV), 10000);
+			setCookie('oMapV2', JSON.stringify(cV), 10000);
 		}
 		
 		function getOMapCookie() {
-			return getCookie('oMap');
+			return getCookie('oMapV2');
 		}
 		
-		function setUserCookie(user) {
-			setCookie('oMap_User',JSON.stringify(user.toJSON()),10000);
-		}
-		 
 		function init() {
 			var cookie = getOMapCookie();
-			if (cookie) {	
+			if (cookie) {
 				var cV = JSON.parse(cookie);
 				if (mapId == cV.mapId) userId = cV.uId;
 			}

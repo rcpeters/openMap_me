@@ -13,8 +13,6 @@ var app = express();
 // map provider is a singlon
 var mapProvider = require('./mapProvider').MapProvider;
 
-var clients = [];
-
 app.configure(function(){
   app.set('port', process.env.PORT || 3000);
   app.set('views', __dirname + '/views');
@@ -43,28 +41,12 @@ var server = http.createServer(app).listen(app.get('port'), function(){
  
 var io = require('socket.io').listen(server);
 
-function emitUsersUpdate(mapId) {
-	console.log('emit users[]');
-	mapProvider.getUsers(mapId,
-	function(error, users) {
-		for (uX in users) {
-			if (clients[users[uX].id]) clients[users[uX].id].emit('usersUpdate',JSON.stringify(users));
-		}
-	});
-};
-
-function emitUserUpdate(user,mapId) {
-	console.log('emit users[]');
-	mapProvider.getUsers(mapId,
-	function(error, users) {
-		for (uX in users) {
-			if (clients[users[uX].id]) clients[users[uX].id].emit('userUpdate',JSON.stringify(user));
-		}
-	});
-};
-
 io.sockets.on('connection', function (socket) {
+	
 	socket.on('initUser', function(data) {
+		var mapId = data.mapId;
+		socket.join(mapId);
+	
 		//Transmit other users back
 		mapProvider.getUsers(data.mapId, function(error, users) {
 			socket.emit('usersUpdate',JSON.stringify(users));
@@ -74,15 +56,13 @@ io.sockets.on('connection', function (socket) {
 		if (data.id) {
 			console.log('user id is ' +data.id);
 			mapProvider.getUser(data.id, function(error, user) {
-				clients[user.id] = socket;
 				socket.emit('initUser', JSON.stringify(user));
-				emitUserUpdate(user,data.mapId);
+				io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
 			});
 		} else {
-			mapProvider.createUser(data.mapId, function(error, user) {
-				clients[user.id] = socket;
+			mapProvider.createUser(mapId, function(error, user) {
 				socket.emit('initUser', JSON.stringify(user));
-				emitUserUpdate(user,data.mapId);
+				io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
 			});
 		}
 	});
@@ -90,11 +70,10 @@ io.sockets.on('connection', function (socket) {
 	socket.on('userUpdate', function (data) {
 		var user = data.user;
 		var mapId = data.mapId; 
-		clients[user.id] = socket;
 		console.log("user update");
 		mapProvider.updateUser(user, mapId, function (error, user) {
 			if ( error ) console.log( error );
-			else emitUserUpdate(user,mapId);
+			else io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
 		});
 	});
 });
