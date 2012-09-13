@@ -9,9 +9,14 @@ var sequenceProvider = require('./sequenceProvider').SequenceProvider;
 var MapProvider = function(host, port) {
   console.log("host is" + host);
   console.log("port is" + port);
-  this.db= new Db('oMap', new Server(host, port, {auto_reconnect: true}, {}));
+  this.db= new Db('oMapV1', new Server(host, port, {auto_reconnect: true}, {}));
   this.db.open(function(){});
 };
+
+MapProvider.prototype.natoAlfa = [
+	"Alfa", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", 
+	"Juliett", "Kilo", "Lima", "Mike", "November", "Oscar", "Papa", "Quebec", "Romeo", 
+	"Sierra", "Tango", "Uniform", "Victor", "Whiskey", "Xray", "Yankee", "Zulu"];
 
 MapProvider.prototype.getMCollection = function(callback) {
 	this.getCollection('maps', callback);
@@ -60,7 +65,7 @@ MapProvider.prototype.getUCollection = function(callback) {
 
 MapProvider.prototype.createMap = function(callback) {
     mapProvider = this;
-	sequenceProvider.base36Counter('test',function(error, seq) {
+	sequenceProvider.base36Counter('maps', 'sequence', function(error, seq) {
 			if ( error ) {
 				console.error( error );
 				callback( error );
@@ -86,11 +91,22 @@ MapProvider.prototype.createMap = function(callback) {
 };
 
 MapProvider.prototype.createUser = function(mId,callback) {
+	mapProvider = this;
 	this.getUCollection(function(error, userColl) {
-		userColl.insert({mapId: mId, name: 'test', pos: '', lastUpdate: '', objectVersion: '1'}, {safe:true}, function(error, data) {
-			data[0].id = data[0]._id; // hack for now
-			callback(null, data[0]);
-		});
+			sequenceProvider.counter('map_'+mId,'mapXUser',function(error, seq) {
+				if ( error ) {
+					console.error( error );
+					callback( error );
+				} else {
+					console.error('user counter is is is is is is is is is is is is' + seq );
+					var mod = (seq - 1) % 26;
+					var multi =  Math.floor( (seq - 1) / 26);
+					userColl.insert({mapId: mId, name: mapProvider.natoAlfa[mod] + ' ' + multi, pos: '', lastUpdate: '', objectVersion: '1'}, {safe:true}, function(error, data) {
+					data[0].id = data[0]._id; // hack for now
+					callback(null, data[0]);
+					});
+				}
+			});
 	});
 };
 

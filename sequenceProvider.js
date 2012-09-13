@@ -11,9 +11,10 @@ var SequenceProvider = function(host, port) {
   this.db.open(function(){});
 };
 
-SequenceProvider.prototype.getSCollection = function(callback) {
-	this.getCollection('sequences', callback);
+SequenceProvider.prototype.getSCollection = function(collectionName, callback) {
+	this.getCollection(collectionName, callback);
 };
+
 
 SequenceProvider.prototype.getCollection = function(collectionName, callback) {
 	this.db.collection(collectionName, function(error, collection) {
@@ -26,11 +27,11 @@ SequenceProvider.prototype.getCollection = function(collectionName, callback) {
 	});
 };
 
-SequenceProvider.prototype.getNextS = function(sequenceId, callback) {
-	this.getSCollection(function(error, userColl) {
+SequenceProvider.prototype.getNextS = function(name, collectionName, callback) {
+	this.getSCollection(collectionName, function(error, userColl) {
 		// should checkout findAndModify
 		userColl.findAndModify(
-			{_id: sequenceId},
+			{_id: name},
 			[['_id', 'asc']],
 			{'$inc': {"seq":1}},
 			{new: true, upsert:true},
@@ -45,8 +46,8 @@ SequenceProvider.prototype.getNextS = function(sequenceId, callback) {
 	});
 };
 
-SequenceProvider.prototype.counter = function(name, callback) {
-	this.getNextS(name,
+SequenceProvider.prototype.counter = function(name, collectionName, callback) {
+	this.getNextS(name, collectionName,
 		function(error, seqObj) {
 			if ( error ) {
 				console.log( error );
@@ -57,8 +58,8 @@ SequenceProvider.prototype.counter = function(name, callback) {
 	});
 };
 
-SequenceProvider.prototype.base36Counter = function(name, callback) {
-	this.getNextS(name,
+SequenceProvider.prototype.base36Counter = function(name, collectionName, callback) {
+	this.getNextS(name, collectionName,
 		function(error, seqObj) {
 			if ( error ) {
 				console.log( error );
