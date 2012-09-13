@@ -237,7 +237,7 @@
 			var exdate=new Date();
 			exdate.setDate(exdate.getDate() + exdays);
 			var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
-			document.cookie=c_name + "=" + c_value;
+			document.cookie=c_name + "=" + c_value + ";path=/;";
 		}
 		
 		function setOMapCookie(username, uId, mapId) {
@@ -245,7 +245,7 @@
 			cV.username = username;
 			cV.uId = uId;
 			cV.mapId = mapId;
-			setCookie('oMap', JSON.stringify(cV), 1000);
+			setCookie('oMap', JSON.stringify(cV), 10000);
 		}
 		
 		function getOMapCookie() {
@@ -307,8 +307,8 @@
 			<ul id="userColl"></ul>
 		</div>
 		<div data-role="footer" data-position="fixed">
-				<strong>MAP ID: <%=map.id%></strong>
-				<strong>YOUR ID:</strong> <span id="user">test</span> 
+				<strong>MAP: <%=map.id%></strong>&nbsp;&nbsp;
+				<strong>HANDLE: </strong> <span id="user">test</span> 
 				<a href="#inputs" data-role="button" data-transition="slide" data-mini="true" data-inline="true" data-icon="gear">edit</a>
 				<a href="#why" data-role="button" data-transition="slide" data-mini="true" data-inline="true" data-icon="info">Info</a>
 		</div>
