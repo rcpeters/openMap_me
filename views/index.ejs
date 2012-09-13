@@ -23,7 +23,6 @@
 		var pollUserInfoInterval =  null;
 		
 		socket.on('initUser', function (data) {
-			alert('init user');
 			initUser(JSON.parse(data));
 		});
 				
