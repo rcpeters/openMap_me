@@ -298,15 +298,13 @@
   <body>
   
 	<div id="index" data-role="page">
+		<div data-role="header" data-position="fixed">
+			<h1>&nbsp;</h1>	<a href="#inputs" data-role="button" data-transition="slide" data-mini="true" data-inline="true" data-icon="gear">MAP: <%=map.id%> HANDLE: <span id="user">test</span></a>
+			<a href="#why" data-role="button" data-transition="slide" data-mini="true" data-inline="true" data-icon="info">Info</a>
+		</div>
 		<div data-role="content">	
 			<p>Welcome to <%= title %></p>
 			<ul id="userColl"></ul>
-		</div>
-		<div data-role="footer" data-position="fixed">
-				<strong>MAP: <%=map.id%></strong>&nbsp;&nbsp;
-				<strong>HANDLE: </strong> <span id="user">test</span> 
-				<a href="#inputs" data-role="button" data-transition="slide" data-mini="true" data-inline="true" data-icon="gear">edit</a>
-				<a href="#why" data-role="button" data-transition="slide" data-mini="true" data-inline="true" data-icon="info">Info</a>
 		</div>
 	</div>
 	

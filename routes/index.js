@@ -7,7 +7,7 @@ var mapProvider = require('../mapProvider').MapProvider;
 exports.index = function(req, res){
 	console.log(req.url);
 	var mapId = "";
-	if (req.url.length > 3) mapId = req.url.substring(3).toLowerCase();
+	if (req.url.length > 3) mapId = req.url.substring(3).toUpperCase();
   
 	if (mapId == undefined || mapId == '') {
 		mapProvider.createMap(function (error, map) {

@@ -71,7 +71,7 @@ MapProvider.prototype.createMap = function(callback) {
 				callback( error );
 			} else {
 				mapProvider.getMCollection(function(error, mapColl) {
-					mapColl.insert({ id:seq, objectVersion: '0'}, {safe:true}, function(error, data) {
+					mapColl.insert({ id:seq.toUpperCase(), objectVersion: '0'}, {safe:true}, function(error, data) {
 						if ( error ) {
 							console.error( error );
 							callback( error );
@@ -129,21 +129,21 @@ MapProvider.prototype.getUsers = function(mId,callback) {
 
 MapProvider.prototype.getMap = function(mapId, callback) {
 	this.getMCollection(function(error, maps_collection) {
-      if( error ) {
-		callback(error);
-      } else {
-        maps_collection.findOne({id: mapId}, function(error, map) {
-			if( error ) {
-				callback(error);
-				return;
-			}
-			if (map == null) {
-				callback("maps is null");
-				return;
-			} 
-			callback(null, map);
-        });
-      }
+		if( error ) {
+			callback(error);
+		} else {
+			maps_collection.findOne({id: mapId}, function(error, map) {
+				if( error ) {
+					callback(error);
+					return;
+				}
+				if (map == null) {
+					callback("maps is null");
+					return;
+				} 
+				callback(null, map);
+			});
+		}
     });
 };
 
