@@ -2,14 +2,15 @@
 <html>
   <head>
     <title><%= title %></title>
-    <link rel='stylesheet' href='/stylesheets/style.css' />
-	<script src="/socket.io/socket.io.js"></script>
-	<meta name="viewport" content="width=device-width, initial-scale=1"> 
-	<link rel="stylesheet" href="/stylesheets/jquery.mobile-1.1.1.min.css" />
-	<script src="/javascripts/jquery-1.7.1.min.js"></script>
-	<script src="/javascripts/jquery.mobile-1.1.1.min.js"></script>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="/socket.io/socket.io.js"></script> 
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0-beta.1/jquery.mobile-1.2.0-beta.1.min.css" />
+	<script src="http://code.jquery.com/jquery-1.8.1.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.2.0-beta.1/jquery.mobile-1.2.0-beta.1.min.js"></script>
     <script src="/javascripts/underscore-min.js"></script>
     <script src="/javascripts/backbone-min.js"></script>   
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+		
 	<script>
 		var M={}, V={}, C={};
 		var mapId = '<%=map.id%>';
@@ -21,6 +22,8 @@
 		var nameView = null;
 		var userCollection = null;
 		var pollUserInfoInterval =  null;
+		var watchID;
+		var geoLoc;
 		
 		socket.on('initUser', function (data) {
 			initUser(JSON.parse(data));
@@ -129,6 +132,7 @@
 			
 			initialize: function()	{
 				this.nameLiViews = {}; // view chache for further reuse
+				this.lablesGMap = {}; // view chache for further reuse
 				//_(this).bindAll('add');
 				this.collection.bind('add', this.render, this);
 				this.collection.bind('change', this.render, this);
@@ -143,10 +147,32 @@
 							model: m
 						});
 						colView.$el.append(colView.nameLiViews[m.id].render().el);
+						 
 					}  else {
 						colView.nameLiViews[m.id].render();
 					}
 					
+					if (m.get('pos') && m.get('pos') != '') {
+						var gPos = new google.maps.LatLng(m.get('pos').coords.latitude,
+                                             m.get('pos').coords.longitude);
+						if (!colView.lablesGMap[m.id]) {
+							colView.lablesGMap[m.id] = new Label({
+								map: map,
+								position: gPos,
+								text: m.get('name')
+							});
+							var temp = colView.lablesGMap[m.id];							
+						} else {
+							colView.lablesGMap[m.id].setValues({
+								position: new google.maps.LatLng(m.get('pos').coords.latitude,
+                                             m.get('pos').coords.longitude),
+								text: m.get('name')
+							});
+							//colView.lablesGMap[m.id].text = m.get('name');
+							//colView.lablesGMap[m.id].position = ;
+							//colView.lablesGMap[m.id].draw();
+						}
+					}
 				});
 				return this;
 			}
@@ -183,27 +209,43 @@
 				this.model.set({'name':this.$el.val()}); 
 			}
 		});
-
-		function pollUserInfo() {
-			var loc = null;
-			if (navigator.geolocation) {
-				console.log("pollUserInfo navigator.geolocation");
-				loc = navigator.geolocation.getCurrentPosition( 
-					function(pos) {
-						console.log("inside getCurrentPositionCallBack");
-						if (pos != null) {
-							var coordsChanged = user.get("pos") == undefined || user.get("pos") == null || JSON.stringify(pos.coords) != JSON.stringify(user.get("pos").coords);
-							if (coordsChanged) {
-								user.set({'pos': pos});
-							}
-						}
-						
-					}, showError);
-				console.log(loc);
-			} 
+		
+		function watchGPS() {
+			if(navigator.geolocation){
+				// timeout at 60000 milliseconds (60 seconds)
+				var options = {timeout:6000000};
+				geoLoc = navigator.geolocation;
+				watchID = geoLoc.watchPosition(showLocation, 
+												gpsErrorHandler,
+												options);
+			}else{
+				alert("Sorry, browser does not support geolocation!");
+			}
 		}
+		
+		function turnOffWatchGPS () {
+			 navigator.geolocation.clearWatch(watchId);
+		}
+		
+		function showLocation(pos) {
+			if ( !user.get('pos').coords || !sameLatLong(pos, user.get('pos'))) {
+				console.log(JSON.stringify(pos.coords));
+				console.log(user.get('pos').coords);
+				user.set({'pos': pos});
+			}			
+		}
+		
+		function sameLatLong(pos1, pos2) {
+			console.log(pos1.longitude != pos2.longitude);
+			console.log(pos1.longitude + ' '+pos2.longitude);
+			
+			if (pos1.coords.longitude != pos2.coords.longitude) return false;
+			if (pos1.coords.latitude != pos2.coords.latitude) return false;
+			return true;
+		}
+		
 				
-		function showError(error) {
+		function gpsErrorHandler(error) {
 			switch(error.code) {
 				case error.PERMISSION_DENIED:
 				alert("User denied the request for Geolocation.");
@@ -270,23 +312,24 @@
 			nameEditView = new V.NameEdit({model: user, el: $("#editname")});
 			nameView.render();
 			nameEditView.render();
-			pollUserInfoInterval = pollUserInfo();
-			setInterval("pollUserInfo()",15000);
+			watchGPS();
+			
 			
 			socket.on('disconnect', function(data) {
 				console.log('disconnected disconnected disconnected disconnected disconnected disconnected disconnected ');
-				clearInterval(pollUserInfoInterval);
+				turnOffWatchGPS();
 			});
 
 			socket.on('connect', function(data) {
 				console.log('connected connected connected connected connected connected connected ');
-				pollUserInfoInterval = pollUserInfo();
+				watchGPS();
 				socket.emit("initUser", {'mapId': mapId, 'id':userId});
 			});			
 		}
 				
 		$(function() {
 			init();
+			initializeMaps();
 			$('#save-button').click( function () {
 			console.log('here' + $('#mapIdEdit').val() + " " + mapId);
 				if ( mapId != $('#mapIdEdit').val()) window.url = "/m" + $('#mapIdEdit').val();
@@ -294,20 +337,142 @@
 		});
 		
 	</script>
+	<script>
+    var map;
+	  
+	// Define the overlay, derived from google.maps.OverlayView
+	function Label(opt_options) {
+		 // Initialization
+		 this.setValues(opt_options);
+
+		 // Label specific
+		 var span = this.span_ = document.createElement('span');
+		 span.style.cssText = 'position: relative; left: 0px; top: 0px; font-weight:bold;' +
+							  'white-space: nowrap; border: 1px solid #8B0000; border-bottom: 0px; border-right: 0px;' +
+							  'padding: 2px; padding-left: 4px; padding-right: 5px; background-color:rgba(0,0,0,0.1);'
+
+		 var div = this.div_ = document.createElement('div');
+		 div.appendChild(span);
+		 div.style.cssText = 'position: absolute; display: none';
+	};
+	Label.prototype = new google.maps.OverlayView;
+
+	// Implement onAdd
+	Label.prototype.onAdd = function() {
+		var pane = this.getPanes().overlayLayer;
+		pane.appendChild(this.div_);
+
+		// Ensures the label is redrawn if the text or position is changed.
+		var me = this;
+		this.listeners_ = [
+			google.maps.event.addListener(this, 'position_changed',
+			function() { me.draw(); }),
+			google.maps.event.addListener(this, 'text_changed',
+			function() { me.draw(); })
+		];
+	};
+
+	// Implement onRemove
+	Label.prototype.onRemove = function() {
+		this.div_.parentNode.removeChild(this.div_);
+
+		// Label is removed from the map, stop updating its position/text.
+		for (var i = 0, I = this.listeners_.length; i < I; ++i) {
+			google.maps.event.removeListener(this.listeners_[i]);
+		}
+	};
+
+	// Implement draw
+	Label.prototype.draw = function() {
+		var projection = this.getProjection();
+		var position = projection.fromLatLngToDivPixel(this.get('position'));
+
+		var div = this.div_;
+		div.style.left = position.x + 'px';
+		div.style.top = position.y + 'px';
+		div.style.display = 'block';
+
+		this.span_.innerHTML = this.get('text').toString();
+	};
+
+      function initializeMaps() {
+        var mapOptions = {
+          zoom: 6,
+          mapTypeId: google.maps.MapTypeId.ROADMAP
+        };
+        map = new google.maps.Map(document.getElementById('map_canvas'),
+            mapOptions);
+
+        // Try HTML5 geolocation
+        if(navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+            var pos = new google.maps.LatLng(position.coords.latitude,
+                                             position.coords.longitude);
+	/*
+            var infowindow = new google.maps.InfoWindow({
+              map: map,
+              position: pos,
+              content: 'Location found using HTML5.'
+            });
+	*/		
+/*			var label = new Label({
+              map: map,
+              position: pos,
+              text: 'Location found using HTML5.'
+            });
+*/
+            map.setCenter(pos);
+          }, function() {
+            handleNoGeolocation(true);
+          });
+        } else {
+          // Browser doesn't support Geolocation
+          handleNoGeolocation(false);
+        }
+      }
+
+      function handleNoGeolocation(errorFlag) {
+        if (errorFlag) {
+          var content = 'Error: The Geolocation service failed.';
+        } else {
+          var content = 'Error: Your browser doesn\'t support geolocation.';
+        }
+
+        var options = {
+          map: map,
+          position: new google.maps.LatLng(60, 105),
+          content: content
+        };
+
+        var infowindow = new google.maps.InfoWindow(options);
+        map.setCenter(options.position);
+      }
+
+      
+	 </script>
   </head>
   <body>
   
 	<div id="index" data-role="page">
-		<div data-role="header" data-position="fixed">
-			<h1>&nbsp;</h1>	<a href="#inputs" data-role="button" data-transition="slide" data-mini="true" data-inline="true" data-icon="gear">MAP: <%=map.id%> HANDLE: <span id="user">test</span></a>
-			<a href="#why" data-role="button" data-transition="slide" data-mini="true" data-inline="true" data-icon="info">Info</a>
+		<div data-role="header">		
+			<div data-role="navbar">
+				<ul>
+					<li><a href="#inputs" data-transition="slide" data-icon="gear">Map: <%=map.id%></a></li>
+					<li><a href="#inputs" data-transition="slide" data-icon="gear">ID: <span id="user">test</span></a></li>
+					<li><a href="#why" data-transition="slide" data-icon="info">Info</a></li>
+				</ul>
+			</div>
 		</div>
-		<div data-role="content">	
+		<div data-role="content" style="width: 100%; height: 100%; padding: 0px; margin: 0px;">	
 			<p>Welcome to <%= title %></p>
+				
 			<ul id="userColl"></ul>
+			<div id="map_canvas" style="width: 400px; height: 500px; padding: 0px; background-color: #F0FFFF;">
+				
+			</div>
+			
 		</div>
 	</div>
-	
 	<div data-role="page" id="inputs">
 		<div data-role="content">
 			Change Map ID:
@@ -317,8 +482,7 @@
 			<input name="editname" data-mini="true" data-inline="true" id="editname" value="" />
 			<a href="#" data-role="button" data-mini="true" data-inline="true" data-rel="back" id="save-button">Save</a>
 		</div>
-	</div>
-	
+	</div>	
 	<div data-role="page" id="why">
 		<div data-role="content">
 			Where are you? It's a question the comes up often with my friends. Firing up Google Latitude 
