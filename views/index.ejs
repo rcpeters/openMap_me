@@ -22,7 +22,7 @@
 		var nameView = null;
 		var userCollection = null;
 		var pollUserInfoInterval =  null;
-		var watchID;
+		var watchId;
 		var geoLoc;
 		
 		socket.on('initUser', function (data) {
@@ -152,27 +152,35 @@
 						colView.nameLiViews[m.id].render();
 					}
 					
-					if (m.get('pos') && m.get('pos') != '') {
+					if (m.get('pos').coords) {
 						var gPos = new google.maps.LatLng(m.get('pos').coords.latitude,
                                              m.get('pos').coords.longitude);
+						var date = new Date(m.get('pos').timestamp);
 						if (!colView.lablesGMap[m.id]) {
 							colView.lablesGMap[m.id] = new Label({
 								map: map,
 								position: gPos,
-								text: m.get('name')
+								text: '<strong>'+m.get('name')+'</strong> '+date.toISOString().split('.')[0]
 							});
 							var temp = colView.lablesGMap[m.id];							
 						} else {
 							colView.lablesGMap[m.id].setValues({
 								position: new google.maps.LatLng(m.get('pos').coords.latitude,
                                              m.get('pos').coords.longitude),
-								text: m.get('name')
+								text: '<strong>'+m.get('name')+'</strong> ' +date.toISOString().split('.')[0]
 							});
-							//colView.lablesGMap[m.id].text = m.get('name');
-							//colView.lablesGMap[m.id].position = ;
-							//colView.lablesGMap[m.id].draw();
 						}
 					}
+					
+					// check to see if this is the current user
+					// center if so
+					//if (m.id == userId) map.setCenter(colView.lablesGMap[m.id].position);
+					
+					//var inBounds = true;
+					//for ( x in colView.lablesGMap) {
+					//	if (map.getBounds().contains(colView.lablesGMap[m.id].position)) inBounds = false;
+					//}
+					
 				});
 				return this;
 			}
@@ -236,14 +244,10 @@
 		}
 		
 		function sameLatLong(pos1, pos2) {
-			console.log(pos1.longitude != pos2.longitude);
-			console.log(pos1.longitude + ' '+pos2.longitude);
-			
 			if (pos1.coords.longitude != pos2.coords.longitude) return false;
 			if (pos1.coords.latitude != pos2.coords.latitude) return false;
 			return true;
-		}
-		
+		}		
 				
 		function gpsErrorHandler(error) {
 			switch(error.code) {
@@ -295,6 +299,11 @@
 		}
 		
 		function init() {
+			//alert($('#map-nav-bar li').height());
+			var navBarHeight = $('#map-nav-bar li').height()
+			$('#map_canvas').height($(window).height() - navBarHeight);
+			$('#map_canvas').width($('#map-content').width());
+			
 			var cookie = getOMapCookie();
 			if (cookie) {
 				var cV = JSON.parse(cookie);
@@ -347,7 +356,7 @@
 
 		 // Label specific
 		 var span = this.span_ = document.createElement('span');
-		 span.style.cssText = 'position: relative; left: 0px; top: 0px; font-weight:bold;' +
+		 span.style.cssText = 'position: relative; left: 0px; top: 0px;' +
 							  'white-space: nowrap; border: 1px solid #8B0000; border-bottom: 0px; border-right: 0px;' +
 							  'padding: 2px; padding-left: 4px; padding-right: 5px; background-color:rgba(0,0,0,0.1);'
 
@@ -355,8 +364,13 @@
 		 div.appendChild(span);
 		 div.style.cssText = 'position: absolute; display: none';
 	};
+	
 	Label.prototype = new google.maps.OverlayView;
 
+	Label.prototype.getPosition = function () {
+		return this.position;
+	};
+	
 	// Implement onAdd
 	Label.prototype.onAdd = function() {
 		var pane = this.getPanes().overlayLayer;
@@ -408,19 +422,6 @@
           navigator.geolocation.getCurrentPosition(function(position) {
             var pos = new google.maps.LatLng(position.coords.latitude,
                                              position.coords.longitude);
-	/*
-            var infowindow = new google.maps.InfoWindow({
-              map: map,
-              position: pos,
-              content: 'Location found using HTML5.'
-            });
-	*/		
-/*			var label = new Label({
-              map: map,
-              position: pos,
-              text: 'Location found using HTML5.'
-            });
-*/
             map.setCenter(pos);
           }, function() {
             handleNoGeolocation(true);
@@ -454,19 +455,15 @@
   <body>
   
 	<div id="index" data-role="page">
-		<div data-role="header">		
-			<div data-role="navbar">
+		<div data-role="content" style="width: 100%; height: 100%; padding: 0px; margin: 0px;" id="map-content">	
+			<div data-role="navbar" data-fullscreen="true" id="map-nav-bar">
 				<ul>
-					<li><a href="#inputs" data-transition="slide" data-icon="gear">Map: <%=map.id%></a></li>
-					<li><a href="#inputs" data-transition="slide" data-icon="gear">ID: <span id="user">test</span></a></li>
+					<li><a href="#inputs" data-transition="slide" data-icon="gear">ID: <span id="user"></span></a></li>
+					<li><a href="#inputs" data-transition="slide" data-icon="gear">List</a></li>
 					<li><a href="#why" data-transition="slide" data-icon="info">Info</a></li>
 				</ul>
-			</div>
-		</div>
-		<div data-role="content" style="width: 100%; height: 100%; padding: 0px; margin: 0px;">	
-			<p>Welcome to <%= title %></p>
-				
-			<ul id="userColl"></ul>
+			</div>		
+			
 			<div id="map_canvas" style="width: 400px; height: 500px; padding: 0px; background-color: #F0FFFF;">
 				
 			</div>
@@ -481,6 +478,13 @@
 			Choose a different id: 
 			<input name="editname" data-mini="true" data-inline="true" id="editname" value="" />
 			<a href="#" data-role="button" data-mini="true" data-inline="true" data-rel="back" id="save-button">Save</a>
+		</div>
+	</div>
+	<div data-role="page" id="list">
+		<div data-role="content">
+			<ul id="userColl"></ul>
+			<br />
+			<a href="#" data-role="button" data-mini="true" data-inline="true" data-rel="back" id="why-back-button">Back</a>
 		</div>
 	</div>	
 	<div data-role="page" id="why">
