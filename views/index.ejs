@@ -2,11 +2,11 @@
 <html>
   <head>
     <title><%= title %></title>
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <script src="/socket.io/socket.io.js"></script> 
-	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0-beta.1/jquery.mobile-1.2.0-beta.1.min.css" />
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0-rc.1/jquery.mobile-1.2.0-rc.1.min.css" />
 	<script src="http://code.jquery.com/jquery-1.8.1.min.js"></script>
-	<script src="http://code.jquery.com/mobile/1.2.0-beta.1/jquery.mobile-1.2.0-beta.1.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.2.0-rc.1/jquery.mobile-1.2.0-rc.1.min.js"></script>
     <script src="/javascripts/underscore-min.js"></script>
     <script src="/javascripts/backbone-min.js"></script>   
 	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
@@ -110,13 +110,18 @@
 			
 			tagName:  "li",
 			
+			templateNoPos: _.template( "{{name}}"),
+			
+			templateHasPos: _.template( "{{name}}, {{pos.coords.latitude}}, {{pos.coords.longitude}} {{pos.timestamp}}"),
+			
 			render: function(event){
 				var modelJson = this.model.toJSON();
-				var templateNoPos = _.template( "{{name}}");
-				var templateHasPos = _.template( "{{name}}, {{pos.coords.latitude}}, {{pos.coords.longitude}} {{pos.timestamp}}");
-				
-				if (modelJson.pos != undefined && modelJson.pos.coords != undefined) this.$el.html(templateHasPos(modelJson));
-				else this.$el.html(templateNoPos(modelJson));
+								
+				if (modelJson.pos != undefined && modelJson.pos.coords != undefined) {
+					this.$el.html(this.templateHasPos(modelJson));
+				} else {
+					this.$el.html(this.templateNoPos(modelJson));
+				}
 				
 				return this;
 			}
@@ -138,8 +143,17 @@
 				this.collection.bind('change', this.render, this);
 			},
 			
+			zoomAll: function() {
+					var bounds = new google.maps.LatLngBounds();
+					for (x in this.lablesGMap) {
+						bounds.extend(this.lablesGMap[x].position);
+					}
+					map.fitBounds(bounds);
+			},
+			
 			render: function()	{	
 				var colView = this;
+				
 				this.collection.each(function (m) {
 					var curLiV = null;
 					if (colView.nameLiViews[m.id] == undefined) {
@@ -153,28 +167,31 @@
 					}
 					
 					if (m.get('pos').coords) {
-						var gPos = new google.maps.LatLng(m.get('pos').coords.latitude,
-                                             m.get('pos').coords.longitude);
 						var date = new Date(m.get('pos').timestamp);
 						if (!colView.lablesGMap[m.id]) {
 							colView.lablesGMap[m.id] = new Label({
 								map: map,
-								position: gPos,
-								text: '<strong>'+m.get('name')+'</strong> '+date.toISOString().split('.')[0]
+								position: new google.maps.LatLng(m.get('pos').coords.latitude,
+                                             m.get('pos').coords.longitude),
+								text: '<strong>'+m.get('name')+'</strong> '
 							});
-							var temp = colView.lablesGMap[m.id];							
+							new CenterControl(m.get('name'),m.get('id'),map);
+							var temp = colView.lablesGMap[m.id];
+							
+							if (colView.lablesGMap[m.id].length <= 1) map.setCenter(colView.lablesGMap[m.id].position);
+							else colView.zoomAll();
 						} else {
 							colView.lablesGMap[m.id].setValues({
 								position: new google.maps.LatLng(m.get('pos').coords.latitude,
                                              m.get('pos').coords.longitude),
-								text: '<strong>'+m.get('name')+'</strong> ' +date.toISOString().split('.')[0]
+								text: '<strong>'+m.get('name')+'</strong> '
 							});
 						}
 					}
 					
 					// check to see if this is the current user
 					// center if so
-					//if (m.id == userId) map.setCenter(colView.lablesGMap[m.id].position);
+					
 					
 					//var inBounds = true;
 					//for ( x in colView.lablesGMap) {
@@ -190,10 +207,9 @@
 			initialize: function() {
 				this.model.bind('change', this.render, this);
 			},
-			
+			template : _.template( "{{name}}"),
 			render: function(event) {
-				var template = _.template( "{{name}}");
-				this.$el.html(template(this.model.toJSON()));
+				this.$el.html(this.template(this.model.toJSON()));
 				return this;
 			}
 		});
@@ -299,7 +315,6 @@
 		}
 		
 		function init() {
-			//alert($('#map-nav-bar li').height());
 			var navBarHeight = $('#map-nav-bar li').height()
 			$('#map_canvas').height($(window).height() - navBarHeight);
 			$('#map_canvas').width($('#map-content').width());
@@ -337,17 +352,67 @@
 		}
 				
 		$(function() {
+			$.mobile.loading( 'show' );
 			init();
 			initializeMaps();
 			$('#save-button').click( function () {
 			console.log('here' + $('#mapIdEdit').val() + " " + mapId);
 				if ( mapId != $('#mapIdEdit').val()) window.url = "/m" + $('#mapIdEdit').val();
-			})
+			});
+			$(window).resize(function() {
+				var navBarHeight = $('#map-nav-bar li').height()
+				$('#map_canvas').height($(window).height() - navBarHeight);
+				$('#map_canvas').width($('#map-content').width());
+				google.maps.event.trigger(map, "resize");
+			});
+			$.mobile.loading( 'hide' );
 		});
 		
 	</script>
 	<script>
     var map;
+	  
+    function CenterControl(name, modelId, map) {
+		var controlDiv = document.createElement('div');
+		
+		// Set CSS styles for the DIV containing the control
+        // Setting padding to 5 px will offset the control
+        // from the edge of the map
+        controlDiv.style.padding = '5px';
+
+        // Set CSS for the control border
+        var controlUI = document.createElement('div');
+        controlUI.style.backgroundColor = 'white';
+        controlUI.style.borderStyle = 'solid';
+        controlUI.style.borderWidth = '2px';
+        controlUI.style.cursor = 'pointer';
+        controlUI.style.textAlign = 'center';
+        controlUI.title = 'Click to center on ' + name;
+        controlDiv.appendChild(controlUI);
+
+        // Set CSS for the control interior
+        var controlText = document.createElement('div');
+        //controlText.style.fontFamily = 'Arial,sans-serif';
+        controlText.style.fontSize = '12px';
+        controlText.style.paddingLeft = '4px';
+        controlText.style.paddingRight = '4px';
+        controlText.innerHTML = '<b>' + name + '</b>';
+        controlUI.appendChild(controlText);
+
+        // Setup the click event listeners: simply set the map to
+        // Chicago
+		
+		controlDiv.index = map.controls[google.maps.ControlPosition.RIGHT_CENTER].length + 1;
+		
+        google.maps.event.addDomListener(controlUI, 'click', function() {
+            alert(modelId);
+			//map.setCenter(chicago)
+        });
+		
+		map.controls[google.maps.ControlPosition.RIGHT_CENTER].push(controlDiv);
+    }
+	  
+	  
 	  
 	// Define the overlay, derived from google.maps.OverlayView
 	function Label(opt_options) {
@@ -456,18 +521,18 @@
   
 	<div id="index" data-role="page">
 		<div data-role="content" style="width: 100%; height: 100%; padding: 0px; margin: 0px;" id="map-content">	
-			<div data-role="navbar" data-fullscreen="true" id="map-nav-bar">
-				<ul>
-					<li><a href="#inputs" data-transition="slide" data-icon="gear">ID: <span id="user"></span></a></li>
-					<li><a href="#inputs" data-transition="slide" data-icon="gear">List</a></li>
-					<li><a href="#why" data-transition="slide" data-icon="info">Info</a></li>
-				</ul>
-			</div>		
-			
 			<div id="map_canvas" style="width: 400px; height: 500px; padding: 0px; background-color: #F0FFFF;">
 				
 			</div>
-			
+			<div data-role="footer" data-position="fixed">
+				<div data-role="navbar" data-fullscreen="true" id="map-nav-bar" data-theme="a">
+				<ul>
+					<li><a href="#inputs" data-transition="slide">ID: <span id="user"></span></a></li>
+					<li><a href="#list" data-transition="slide">List</a></li>
+					<li><a href="#why" data-transition="slide">Info</a></li>
+				</ul>
+				</div>
+			</div>
 		</div>
 	</div>
 	<div data-role="page" id="inputs">
