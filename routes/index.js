@@ -3,12 +3,19 @@
  * GET home page.
  */
 var mapProvider = require('../mapProvider').MapProvider;
+var cookieId = 'oMapV2';
  
 exports.index = function(req, res){
 	console.log(req.url);
 	var mapId = "";
 	if (req.url.length > 3) mapId = req.url.substring(3).toUpperCase();
-  
+	else if (req.cookies[cookieId]) {  
+		var cookieJson =  JSON.parse(req.cookies[cookieId]);
+		console.log(cookieJson.mapId + "ssssssssssssssssssssssss");
+		res.redirect('/m/' +  cookieJson.mapId);
+		return;
+	}
+	
 	if (mapId == undefined || mapId == '') {
 		mapProvider.createMap(function (error, map) {
 			res.redirect('/m/' + map.id);
@@ -23,7 +30,7 @@ exports.index = function(req, res){
 			} else {
 				mapProvider.getUsers(map.id, function (users) {
 					console.log(users);
-					res.render('index', { title: 'oMap.me', 'map': map, 'users': users});
+					res.render('index', { title: 'oMap.me', 'map': map, 'users': users, 'cookieId': cookieId});
 				});
 			}
 		});

@@ -15,6 +15,7 @@
 		var M={}, V={}, C={};
 		var mapId = '<%=map.id%>';
 		var map = <%-JSON.stringify(map)%>;
+		var cookieId = '<%=cookieId%>';
 		
 		var socket = io.connect();
 		var user = null;
@@ -138,6 +139,7 @@
 			initialize: function()	{
 				this.nameLiViews = {}; // view chache for further reuse
 				this.lablesGMap = {}; // view chache for further reuse
+				this.count = 0;
 				//_(this).bindAll('add');
 				this.collection.bind('add', this.render, this);
 				this.collection.bind('change', this.render, this);
@@ -149,6 +151,10 @@
 						bounds.extend(this.lablesGMap[x].position);
 					}
 					map.fitBounds(bounds);
+			},
+			
+			center: function(uId) {
+				map.setCenter(this.lablesGMap[uId].position);
 			},
 			
 			render: function()	{	
@@ -175,10 +181,23 @@
                                              m.get('pos').coords.longitude),
 								text: '<strong>'+m.get('name')+'</strong> '
 							});
-							new CenterControl(m.get('name'),m.get('id'),map);
-							var temp = colView.lablesGMap[m.id];
+							colView.count = colView.count + 1;
 							
-							if (colView.lablesGMap[m.id].length <= 1) map.setCenter(colView.lablesGMap[m.id].position);
+							if (userId == m.id)	{
+								(function(userId) {
+									new CenterControl("Center On Me",map, function() {
+										nameLiViews.center(userId);
+									});
+								})(m.get('id'));
+							}
+							
+							if (colView.count == 2)	{
+								new CenterControl("Zoom All",map, function() {
+									nameLiViews.zoomAll();
+								});
+							}
+							
+							if (colView.count == 1) colView.center(colView.lablesGMap[m.id]);
 							else colView.zoomAll();
 						} else {
 							colView.lablesGMap[m.id].setValues({
@@ -307,11 +326,11 @@
 			cV.username = username;
 			cV.uId = uId;
 			cV.mapId = mapId;
-			setCookie('oMapV2', JSON.stringify(cV), 10000);
+			setCookie(cookieId, JSON.stringify(cV), 10000);
 		}
 		
 		function getOMapCookie() {
-			return getCookie('oMapV2');
+			return getCookie(cookieId);
 		}
 		
 		function init() {
@@ -372,7 +391,7 @@
 	<script>
     var map;
 	  
-    function CenterControl(name, modelId, map) {
+    function CenterControl(name, map, callback) {
 		var controlDiv = document.createElement('div');
 		
 		// Set CSS styles for the DIV containing the control
@@ -405,11 +424,10 @@
 		controlDiv.index = map.controls[google.maps.ControlPosition.RIGHT_CENTER].length + 1;
 		
         google.maps.event.addDomListener(controlUI, 'click', function() {
-            alert(modelId);
-			//map.setCenter(chicago)
+			callback();
         });
 		
-		map.controls[google.maps.ControlPosition.RIGHT_CENTER].push(controlDiv);
+		map.controls[google.maps.ControlPosition.TOP_RIGHT].push(controlDiv);
     }
 	  
 	  
