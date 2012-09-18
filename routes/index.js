@@ -3,7 +3,7 @@
  * GET home page.
  */
 var mapProvider = require('../mapProvider').MapProvider;
-var cookieId = 'oMapV2';
+var cookieId = 'oMapV3';
  
 exports.index = function(req, res){
 	console.log(req.url);
@@ -12,7 +12,7 @@ exports.index = function(req, res){
 	else if (req.cookies[cookieId]) {  
 		var cookieJson =  JSON.parse(req.cookies[cookieId]);
 		console.log(cookieJson.mapId + "ssssssssssssssssssssssss");
-		res.redirect('/m/' +  cookieJson.mapId);
+		res.redirect('/m/' +  cookieJson.curMapId);
 		return;
 	}
 	

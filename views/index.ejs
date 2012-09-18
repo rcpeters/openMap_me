@@ -8,7 +8,7 @@
 	<script src="http://code.jquery.com/jquery-1.8.1.min.js"></script>
 	<script src="http://code.jquery.com/mobile/1.2.0-rc.1/jquery.mobile-1.2.0-rc.1.min.js"></script>
     <script src="/javascripts/underscore-min.js"></script>
-    <script src="/javascripts/backbone-min.js"></script>   
+    <script src="/javascripts/backbone-min.js"></script>
 	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
 		
 	<script>
@@ -16,6 +16,7 @@
 		var mapId = '<%=map.id%>';
 		var map = <%-JSON.stringify(map)%>;
 		var cookieId = '<%=cookieId%>';
+		var oMapCookie = null;
 		
 		var socket = io.connect();
 		var user = null;
@@ -322,15 +323,26 @@
 		}
 		
 		function setOMapCookie(username, uId, mapId) {
-			var cV = {};
-			cV.username = username;
-			cV.uId = uId;
-			cV.mapId = mapId;
-			setCookie(cookieId, JSON.stringify(cV), 10000);
+			if (oMapCookie == null) oMapCookie = { maps: {} };
+			oMapCookie.curMapId = mapId;
+			console.log(oMapCookie);
+			console.log(Object.keys(oMapCookie.maps).length);
+			// keep the cookie size down, by limiting to 10 maps or less
+			while (Object.keys(oMapCookie.maps).length > 10) {
+				delete(oMapCookie.maps[Object.keys(oMapCookie.maps)[0]]);
+			}
+			oMapCookie.maps[mapId] = { 'username': username, 'uId': uId };
+			setCookie(cookieId, JSON.stringify(oMapCookie), 10000);
 		}
 		
 		function getOMapCookie() {
-			return getCookie(cookieId);
+			var cookie = getCookie(cookieId);
+			if (cookie) {
+				console.log(cookie);
+				oMapCookie = JSON.parse(cookie);
+				return oMapCookie;
+			}
+			return null;
 		}
 		
 		function init() {
@@ -340,8 +352,7 @@
 			
 			var cookie = getOMapCookie();
 			if (cookie) {
-				var cV = JSON.parse(cookie);
-				if (mapId == cV.mapId) userId = cV.uId;
+				if (cookie.maps[mapId]) userId = cookie.maps[mapId].uId;
 			}
 			userCollection = new M.Users();
 			nameLiViews = new V.NameLis({collection: userCollection, el: $("#userColl")});
