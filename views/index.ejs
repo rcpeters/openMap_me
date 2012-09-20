@@ -370,6 +370,9 @@
 		
 		function init() {
 			resize();
+			$('#index').live('pageshow', function() {
+				resize();
+			});
 			
 			var cookie = getOMapCookie();
 			if (cookie) {
