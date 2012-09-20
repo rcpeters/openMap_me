@@ -11,7 +11,6 @@ exports.index = function(req, res){
 	if (req.url.length > 3) mapId = req.url.substring(3).toUpperCase();
 	else if (req.cookies[cookieId]) {  
 		var cookieJson =  JSON.parse(req.cookies[cookieId]);
-		console.log(cookieJson.mapId + "ssssssssssssssssssssssss");
 		res.redirect('/m/' +  cookieJson.curMapId);
 		return;
 	}

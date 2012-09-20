@@ -149,7 +149,7 @@
 			zoomAll: function() {
 					var bounds = new google.maps.LatLngBounds();
 					for (x in this.lablesGMap) {
-						bounds.extend(this.lablesGMap[x].position);
+						if (this.lablesGMap[x].getMap()) bounds.extend(this.lablesGMap[x].position);
 					}
 					map.fitBounds(bounds);
 			},
@@ -184,6 +184,7 @@
 							});
 							colView.count = colView.count + 1;
 							
+							/*
 							if (userId == m.id)	{
 								(function(userId) {
 									new CenterControl("Center On Me",map, function() {
@@ -191,7 +192,9 @@
 									});
 								})(m.get('id'));
 							}
+							*/
 							
+							/*
 							if (colView.count == 2)	{
 								new CenterControl("Zoom All",map, function() {
 									nameLiViews.zoomAll();
@@ -200,6 +203,7 @@
 							
 							if (colView.count == 1) colView.center(m.id);
 							else colView.zoomAll();
+							*/
 						} else {
 							colView.lablesGMap[m.id].setValues({
 								position: new google.maps.LatLng(m.get('pos').coords.latitude,
@@ -207,18 +211,30 @@
 								text: '<strong>'+m.get('name')+'</strong> '
 							});
 						}
+						
+						// we should change this to not reference jquery mobile selects directly
+						if ($('#show-recent').val() == 'Show Recent') {
+							if ((new Date()).getTime() > m.get('pos').timestamp + (10 * 60 * 1000)) {
+								if (colView.lablesGMap[m.id].getMap() != null) colView.lablesGMap[m.id].setMap(null);
+							} else {
+								if (colView.lablesGMap[m.id].getMap() == null) colView.lablesGMap[m.id].setMap(map);
+							}
+						} else {
+							colView.lablesGMap[m.id].setMap(map);
+						}
 					}
 					
-					// check to see if this is the current user
-					// center if so
-					
-					
-					//var inBounds = true;
-					//for ( x in colView.lablesGMap) {
-					//	if (map.getBounds().contains(colView.lablesGMap[m.id].position)) inBounds = false;
-					//}
-					
 				});
+				
+				// we should refactor to remove jqmobile refereces
+				if ($('#map-zoom').val() == 'Zoom All') {
+					this.zoomAll();
+				}
+					
+				if ($('#map-zoom').val() == 'Center On Me' && colView.lablesGMap[userId]) {
+					colView.center(userId);
+				}
+				
 				return this;
 			}
 		});
@@ -272,7 +288,9 @@
 		}
 		
 		function showLocation(pos) {
-			if ( !user.get('pos').coords || !sameLatLong(pos, user.get('pos'))) {
+			if (   !user.get('pos').coords 
+				|| newerThen1Min(pos, user.get('pos'))
+				|| !sameLatLong(pos, user.get('pos'))) {
 				console.log(JSON.stringify(pos.coords));
 				console.log(user.get('pos').coords);
 				user.set({'pos': pos});
@@ -283,7 +301,12 @@
 			if (pos1.coords.longitude != pos2.coords.longitude) return false;
 			if (pos1.coords.latitude != pos2.coords.latitude) return false;
 			return true;
-		}		
+		}
+		
+		function newerThen1Min(pos1,pos2) {
+			if (pos1.timestamp > pos2.timestamp + (1 * 60 * 1000) ) return true;
+			return false;
+		}
 				
 		function gpsErrorHandler(error) {
 			switch(error.code) {
@@ -346,9 +369,7 @@
 		}
 		
 		function init() {
-			var navBarHeight = $('#map-nav-bar li').height()
-			$('#map_canvas').height($(window).height() - navBarHeight);
-			$('#map_canvas').width($('#map-content').width());
+			resize();
 			
 			var cookie = getOMapCookie();
 			if (cookie) {
@@ -358,6 +379,13 @@
 			nameLiViews = new V.NameLis({collection: userCollection, el: $("#userColl")});
 			console.log("initUser via server");
 			socket.emit("initUser", {'mapId': mapId, 'id':userId});			
+			$('#show-recent').bind('change', function() {
+				nameLiViews.render();
+			});
+			$('#map-zoom').bind('change', function() {
+				nameLiViews.render();
+			});
+
 		}
 		
 		function initUser(u) {
@@ -380,7 +408,15 @@
 				socket.emit("initUser", {'mapId': mapId, 'id':userId});
 			});			
 		}
-				
+		
+		function resize() {
+			var navBarHeight = $('#map-nav-bar li').height();
+			var mapControlHeight = $('#map-controls').height();
+			$('#map_canvas').height($(window).height() - navBarHeight - mapControlHeight);
+			$('#map_canvas').width($('#map-content').width());
+			google.maps.event.trigger(map, "resize");
+		}
+		
 		$(function() {
 			$.mobile.loading( 'show' );
 			init();
@@ -389,12 +425,7 @@
 			console.log('here' + $('#mapIdEdit').val() + " " + mapId);
 				if ( mapId != $('#mapIdEdit').val()) window.url = "/m" + $('#mapIdEdit').val();
 			});
-			$(window).resize(function() {
-				var navBarHeight = $('#map-nav-bar li').height()
-				$('#map_canvas').height($(window).height() - navBarHeight);
-				$('#map_canvas').width($('#map-content').width());
-				google.maps.event.trigger(map, "resize");
-			});
+			$(window).resize(resize);
 			$.mobile.loading( 'hide' );
 		});
 		
@@ -503,7 +534,7 @@
 		this.span_.innerHTML = this.get('text').toString();
 	};
 
-      function initializeMaps() {
+    function initializeMaps() {
         var mapOptions = {
           zoom: 6,
           mapTypeId: google.maps.MapTypeId.ROADMAP
@@ -524,7 +555,7 @@
           // Browser doesn't support Geolocation
           handleNoGeolocation(false);
         }
-      }
+    }
 
       function handleNoGeolocation(errorFlag) {
         if (errorFlag) {
@@ -549,11 +580,7 @@
   <body>
   
 	<div id="index" data-role="page">
-		<div data-role="content" style="width: 100%; height: 100%; padding: 0px; margin: 0px;" id="map-content">	
-			<div id="map_canvas" style="width: 400px; height: 500px; padding: 0px; background-color: #F0FFFF;">
-				
-			</div>
-			<div data-role="footer" data-position="fixed">
+		<div data-role="header" data-position="fixed">
 				<div data-role="navbar" data-fullscreen="true" id="map-nav-bar" data-theme="a">
 				<ul>
 					<li><a href="#inputs" data-transition="slide">ID: <span id="user"></span></a></li>
@@ -561,8 +588,24 @@
 					<li><a href="#why" data-transition="slide">Info</a></li>
 				</ul>
 				</div>
+		</div>
+		<div data-role="content" style="width: 100%; height: 80%; padding: 0px; margin: 0px;" id="map-content">	
+			<div id="map_canvas" style="width: 400px; height: 500px; padding: 0px; background-color: #F0FFFF;">
+				
 			</div>
 		</div>
+		<div data-role="footer" data-theme="a" id="map-controls">
+			<div data-role="controlgroup" data-type="horizontal">
+				<select name="show-recent" id="show-recent" data-mini="true">
+					<option value="Show Recent">Show Recent</option>
+					<option value="Show All">Show All</option>
+				</select> 
+				<select name="map-zoom" id="map-zoom" data-mini="true">
+					<option value="Zoom All">Zoom All</option>
+					<option value="Center On Me">Center On Me</option>
+					<option value="No Zooming">No Zooming</option>
+				</select> 
+			</div>
 	</div>
 	<div data-role="page" id="inputs">
 		<div data-role="content">
