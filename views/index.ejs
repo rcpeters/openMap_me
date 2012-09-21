@@ -12,6 +12,11 @@
 	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
 		
 	<script>
+		var S_CONNECTED = 'connected'
+		var S_NOT_CONNECTED = 'not conected';
+		var S_RECIEVING = 'receiving';
+		var S_NOT_RECIEVING = 'not receiving';
+		
 		var M={}, V={}, C={};
 		var mapId = '<%=map.id%>';
 		var map = <%-JSON.stringify(map)%>;
@@ -32,7 +37,7 @@
 			interpolate : /\{\{(.+?)\}\}/g
 		};
 		
-		M.Status = Backbone.Model.extend({
+		M.AppStatus = Backbone.Model.extend({
 			initialize: function(){
 			   this.on('change', 
 					function(m) {
@@ -42,7 +47,7 @@
 			}
 		});
 		
-		V.Status = Backbone.View.extend({
+		V.StatusBtn = Backbone.View.extend({
 			initialize: function() {
 				this.model.bind('change', this.render, this);
 				this.model.bind('destroy', this.remove, this);
@@ -50,7 +55,23 @@
 			
 			render: function(event){
 				var modelJson = this.model.toJSON();
-				alert('status change');
+				if (this.model.get('gps') != S_RECIEVING || this.model.get('server') != S_CONNECTED)
+					this.$el.css('color', 'red');
+				else 
+					this.$el.css('color', 'green');
+				return this;
+			}
+		});
+		
+		V.StatusCnt = Backbone.View.extend({
+			initialize: function() {
+				this.model.bind('change', this.render, this);
+				this.model.bind('destroy', this.remove, this);
+			},
+			template: _.template( "gps {{gps}}<br /> server {{server}}"),
+			render: function(event){
+				var modelJson = this.model.toJSON();
+				this.$el.html(this.template(modelJson));
 				return this;
 			}
 		});
@@ -247,7 +268,7 @@
 		function watchGPS() {
 			if(navigator.geolocation){
 				// timeout at 60000 milliseconds (60 seconds)
-				var options = {timeout:60000};
+				var options = {timeout:60000, maximumAge: 0};
 				geoLoc = navigator.geolocation;
 				watchID = geoLoc.watchPosition(showLocation, 
 												gpsErrorHandler,
@@ -265,6 +286,10 @@
 			if (   !M.user.get('pos').coords 
 				|| newerThen1Min(pos, M.user.get('pos'))
 				|| !sameLatLong(pos, M.user.get('pos'))) {
+				//alert(pos);
+				console.log('ere');
+				console.log(pos.coords);
+				if (pos.coords && pos.coords != undefined && M.appStatus.get('gps') != S_RECIEVING )M.appStatus.set({gps: S_RECIEVING}); 
 				console.log(JSON.stringify(pos.coords));
 				console.log(M.user.get('pos').coords);
 				M.user.set({'pos': pos});
@@ -299,6 +324,7 @@
 		}
 				
 		function gpsErrorHandler(error) {
+			if (M.appStatus.get('gps') != S_NOT_RECIEVING) M.appStatus.set({gps: S_NOT_RECIEVING});
 			switch(error.code) {
 				case error.PERMISSION_DENIED:
 				alert("User denied the request for Geolocation.");
@@ -306,15 +332,12 @@
 				break;
 			case error.POSITION_UNAVAILABLE:
 				console("Location information is unavailable.");
-				watchGPS(); // try agian
 				break;
 			case error.TIMEOUT:
 				console.log("The request to get user location timed out.");
-				watchGPS(); // try agian
 				break;
 			case error.UNKNOWN_ERROR:
 				console.log("An unknown error occurred.");
-				watchGPS(); // try agian
 				break;
 			}
 			console.log('GPS error');
@@ -557,11 +580,13 @@
 					console.log('disconnected disconnected disconnected disconnected disconnected disconnected disconnected ');
 					//turnOffWatchGPS();
 					socketIsConn = false;
+					M.appStatus.set({server: S_NOT_CONNECTED});
 				});
 
 			socket.on('connect', function(data) {
 				console.log('connected connected connected connected connected connected connected ');
 				socketIsConn = true;
+				M.appStatus.set({server: S_CONNECTED});
 				if (!M.user) socket.emit("initUser", {'mapId': mapId, 'id':userId});
 				else M.user.emitUser();
 			});		
@@ -577,26 +602,31 @@
 				if (cookie.maps[mapId]) userId = cookie.maps[mapId].uId;
 			}
 			M.userCollection = new M.Users();
-			nameLiViews = new V.NameLis({collection: M.userCollection, el: $("#userColl")});
+			V.nameLis = new V.NameLis({collection: M.userCollection, el: $("#userColl")});
+			M.appStatus = new M.AppStatus({ gps: S_NOT_RECIEVING, server: S_NOT_CONNECTED});
+			V.statusBtn = new V.StatusBtn ({ model: M.appStatus, el: $("#status")});
+			V.statusBtn.render();
+			V.statusCnt = new V.StatusCnt ({ model: M.appStatus, el: $("#status-content")});
+			V.statusCnt.render();
+			
 			console.log("initUser via server");
-			//socket.emit("initUser", {'mapId': mapId, 'id':userId});			
-			$('#show-recent').bind('change', function() {
-				nameLiViews.render();
-			});
-			$('#map-zoom').bind('change', function() {
-				nameLiViews.render();
-			});
 			
 			initializeMaps();
+			
 			$('#save-button').click( function () {
 			console.log('here' + $('#mapIdEdit').val() + " " + mapId);
 				if ( mapId != $('#mapIdEdit').val()) window.url = "/m" + $('#mapIdEdit').val();
 			});
+			$('#show-recent').bind('change', function() {
+				V.nameLis.render();
+			});
+			$('#map-zoom').bind('change', function() {
+				V.nameLis.render();
+			});
+
 			$(window).resize(resize);
 			$.mobile.loading( 'hide' );
-			
-			$('#status').css('color','red');
-			
+						
 		});		
 	 </script>
   </head>
@@ -614,7 +644,7 @@
 					<option value="Center On Me">Center On Me</option>
 					<option value="No Zooming">No Zooming</option>
 				</select>
-				<a href="#status" id="status" data-rel="dialog" style="color: red;">Status</a>
+				<a href="#status" id="status" data-rel="dialog">Status</a>
 			</div>
 			<div  style="float: left;">
 				
@@ -663,8 +693,11 @@
 		</div>
 	</div>
 	<div data-role="page" id="status">
-		<div data-role="content">status<br />
-		<a href="" data-role="button" data-rel="back" data-mini="true" data-inline="true" data-theme="a">close</a> </div>
+		<div data-role="header"><h1>App Status</h1></div>
+		<div data-role="content" id="status-content">
+			<br />
+			<a href="" data-role="button" data-rel="back" data-mini="true" data-inline="true" data-theme="a">close</a> 
+		</div>
 	</div>
   </body>
 </html>
