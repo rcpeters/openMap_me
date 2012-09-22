@@ -242,6 +242,8 @@
 			},
 			
 			center: function(uId) {
+			console.log(this.nameLiViews[uId]);
+				if (this.nameLiViews[uId] && this.nameLiViews[uId].colView)
 				map.setCenter(this.nameLiViews[uId].colView.getPosition());
 			},
 			
