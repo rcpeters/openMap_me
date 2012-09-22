@@ -10,7 +10,21 @@
     <script src="/javascripts/underscore-min.js"></script>
     <script src="/javascripts/backbone-min.js"></script>
 	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+	<style type="text/javascript">
+		#map_canvas {
+			overflow: hidden;
+			margin: 0;
+			padding: 0;
+		}
 		
+		.circle {
+			  border-radius: 50%;
+			  width: 20px;
+			  height: 20px; 
+			  opacity:0.4;
+			  background-color:rgba(255,0,0,0.5);
+		}
+	</style>
 	<script>
 		var S_CONNECTED = 'connected'
 		var S_NOT_CONNECTED = 'not conected';
@@ -124,6 +138,7 @@
 			initialize: function() {
 				this.model.bind('change', this.render, this);
 				this.model.bind('destroy', this.remove, this);
+				this.cityCircle = null;
 			},
 			
 			tagName:  "li",
@@ -137,6 +152,21 @@
 								
 				if (modelJson.pos != undefined && modelJson.pos.coords != undefined) {
 					this.$el.html(this.templateHasPos(modelJson));
+					if (this.cityCircle == null) {
+						var cOptions = {
+							strokeColor: '#FF0000',
+							strokeOpacity: 0.8,
+							strokeWeight: 2,
+							fillColor: '#FF0000',
+							fillOpacity: 0.35,
+							map: map,
+							center: new google.maps.LatLng(modelJson.pos.coords.latitude, modelJson.pos.coords.longitude),
+							radius: 1
+						};
+						this.cityCircle = new google.maps.Circle(cOptions);
+					} else {
+						this.cityCircle.setCenter(new google.maps.LatLng(modelJson.pos.coords.latitude, modelJson.pos.coords.longitude));
+					}
 				} else {
 					this.$el.html(this.templateNoPos(modelJson));
 				}
@@ -268,7 +298,7 @@
 		function watchGPS() {
 			if(navigator.geolocation){
 				// timeout at 60000 milliseconds (60 seconds)
-				var options = {timeout:60000, maximumAge: 0};
+				var options = {timeout:60000, maximumAge: 0, enableHighAccuracy: true};
 				geoLoc = navigator.geolocation;
 				watchID = geoLoc.watchPosition(showLocation, 
 												gpsErrorHandler,
@@ -387,11 +417,21 @@
 		}
 				
 		function resize() {
-			var navBarHeight = $('#map-nav-bar li').height();
-			var mapControlHeight = $('#map-controls').height();
-			$('#map_canvas').height($(window).height() - navBarHeight - mapControlHeight);
-			$('#map_canvas').width($('#map-content').width());
+			//var navBarHeight = $('#map-nav-bar').height();
+			//var mapControlHeight = $('#map-controls').height();
+			//var height = $(window).height() - navBarHeight - mapControlHeight  - 40;
+			//var width = $('#map-content').width();
+			//var paddingTop = $('#index').css("padding-top");
+			//var paddingBottom = $('#index').css("padding-bottom");
+			//var height2 = $(window).height() - Number(paddingTop.substring(0,paddingTop.length-2)) - Number(paddingBottom.substring(0,paddingBottom.length-2));
+			//alert(paddingTop.substring(0,paddingTop.length-2) + ' ' + mapControlHeight);
+			
+			$('#map_canvas').css('height',$(window).height()+'px');
+			$('#map_canvas').css('width',$(window).width()+'px');
+			//$('#map_canvas').height($(window).height() - navBarHeight - mapControlHeight);
+			//$('#map_canvas').width($('#map-content').width());
 			google.maps.event.trigger(map, "resize");
+			if (V.nameLis) V.nameLis.render();
 		}
 		
 
@@ -437,7 +477,6 @@
 		
 		map.controls[google.maps.ControlPosition.TOP_RIGHT].push(controlDiv);
     }
-	  
 	  
 	  
 	// Define the overlay, derived from google.maps.OverlayView
@@ -624,6 +663,10 @@
 				V.nameLis.render();
 			});
 
+			$('#index').bind('pageshow', function() {
+				V.nameLis.render()//resize();
+			});
+			
 			$(window).resize(resize);
 			$.mobile.loading( 'hide' );
 						
@@ -633,29 +676,29 @@
   <body>
   
 	<div id="index" data-role="page">
-		<div id="map-controls" data-role="header" data-theme="a" class="ui-bar">
+		<div id="map-controls" data-role="header" data-theme="a" class="ui-bar" data-position="fixed"  data-fullscreen="true">
 			<div data-role="controlgroup" data-type="horizontal" data-mini="true"  style="float: left;">
 				<select name="show-recent" id="show-recent">
-					<option value="Show Recent">Show Recent</option>
-					<option value="Show All">Show All</option>
+					<option value="Show Recent">Recent</option>
+					<option value="Show All">All</option>
 				</select> 
 				<select name="map-zoom" id="map-zoom">
 					<option value="Zoom All">Zoom All</option>
-					<option value="Center On Me">Center On Me</option>
-					<option value="No Zooming">No Zooming</option>
+					<option value="Center On Me">On Me</option>
+					<option value="No Zooming">None</option>
 				</select>
-				<a href="#status" id="status" data-rel="dialog">Status</a>
 			</div>
-			<div  style="float: left;">
-				
+			<div data-role="controlgroup" data-type="horizontal" data-mini="true"  style="float: left;">
+				<a href="#status" id="status" data-rel="dialog">Stat</a>
 			</div>
 		</div>		
 		<div data-role="content" style="width: 100%; height: 100%; padding: 0px; margin: 0px;" id="map-content">	
 			<div id="map_canvas" style="width: 400px; height: 500px; padding: 0px; background-color: #F0FFFF;">	
 			</div>
 		</div>
-		<div id="map-nav-bar"  data-role="footer" data-position="fixed">
-				<div data-role="navbar" data-fullscreen="true" data-theme="a">
+		<div id="map-nav-bar"  data-role="footer" data-position="fixed" 
+		data-fullscreen="true">
+				<div data-role="navbar" data-theme="a">
 					<ul>
 						<li><a href="#inputs" data-transition="slide" data-icon="gear">ID: <span id="user"></span></a></li>
 						<li><a href="#list" data-transition="slide" data-icon="grid">List</a></li>
