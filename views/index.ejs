@@ -219,8 +219,6 @@
 			
 			initialize: function()	{
 				this.nameLiViews = {}; // view chache for further reuse
-				this.lablesGMap = {}; // view chache for further reuse
-				this.count = 0;
 				//_(this).bindAll('add');
 				this.collection.bind('add', this.render, this);
 				this.collection.bind('change', this.render, this);
@@ -255,38 +253,6 @@
 					}  else {
 						colView.nameLiViews[m.id].render();
 					}
-					/*
-					if (m.get('pos').coords) {
-						var date = new Date(m.get('pos').timestamp);
-						if (!colView.lablesGMap[m.id]) {
-							colView.lablesGMap[m.id] = new Label({
-								map: map,
-								position: new google.maps.LatLng(m.get('pos').coords.latitude,
-                                             m.get('pos').coords.longitude),
-								text: '<strong>'+m.get('name')+'</strong> '
-							});
-							colView.count = colView.count + 1;
-							
-						} else {
-							colView.lablesGMap[m.id].setValues({
-								position: new google.maps.LatLng(m.get('pos').coords.latitude,
-                                             m.get('pos').coords.longitude),
-								text: '<strong>'+m.get('name')+'</strong> '
-							});
-						}
-						
-						// we should change this to not reference jquery mobile selects directly
-						if ($('#show-recent').val() == 'Show Recent') {
-							if ((new Date()).getTime() > m.get('pos').timestamp + (10 * 60 * 1000)) {
-								if (colView.lablesGMap[m.id].getMap() != null) colView.lablesGMap[m.id].setMap(null);
-							} else {
-								if (colView.lablesGMap[m.id].getMap() == null) colView.lablesGMap[m.id].setMap(map);
-							}
-						} else {
-							colView.lablesGMap[m.id].setMap(map);
-						}
-					}
-					*/
 				});
 				
 				
@@ -295,7 +261,7 @@
 					this.zoomAll();
 				}
 					
-				if ($('#map-zoom').val() == 'Center On Me' && colView.lablesGMap[userId]) {
+				if ($('#map-zoom').val() == 'Center On Me') {
 					colView.center(userId);
 				}
 				
