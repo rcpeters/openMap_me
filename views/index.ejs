@@ -226,13 +226,19 @@
 			
 			zoomAll: function() {
 					var bounds = new google.maps.LatLngBounds();
+					var count = 0;
 					for (x in this.nameLiViews) {
 						var view = this.nameLiViews[x];
 						if (view.colView != null) {
+							count = count + 1;
 							if (view.colView.getMap()) bounds.extend(view.colView.getPosition());
 						}
 					}
-					map.fitBounds(bounds);
+					if (count > 1) {
+						map.fitBounds(bounds);
+					} else {
+						this.center(userId);
+					}
 			},
 			
 			center: function(uId) {
