@@ -139,6 +139,7 @@
 				this.model.bind('change', this.render, this);
 				this.model.bind('destroy', this.remove, this);
 				this.cityCircle = null;
+				this.colView = null;
 			},
 			
 			tagName:  "li",
@@ -149,24 +150,57 @@
 			
 			render: function(event){
 				var modelJson = this.model.toJSON();
-								
+
+
+				
 				if (modelJson.pos != undefined && modelJson.pos.coords != undefined) {
 					this.$el.html(this.templateHasPos(modelJson));
-					if (this.cityCircle == null) {
-						var cOptions = {
-							strokeColor: '#FF0000',
-							strokeOpacity: 0.8,
-							strokeWeight: 2,
-							fillColor: '#FF0000',
-							fillOpacity: 0.35,
-							map: map,
-							center: new google.maps.LatLng(modelJson.pos.coords.latitude, modelJson.pos.coords.longitude),
-							radius: 1
-						};
-						this.cityCircle = new google.maps.Circle(cOptions);
-					} else {
-						this.cityCircle.setCenter(new google.maps.LatLng(modelJson.pos.coords.latitude, modelJson.pos.coords.longitude));
+
+					if (this.colView == null) {
+							this.colView = new Label({
+								map: map,
+								position: new google.maps.LatLng(modelJson.pos.coords.latitude,
+                                             modelJson.pos.coords.longitude),
+								text: '<strong>'+modelJson.name+'</strong> '
+							});
+							
+						} else {
+							this.colView.setValues({
+								position: new google.maps.LatLng(modelJson.pos.coords.latitude,
+                                             modelJson.pos.coords.longitude),
+								text: '<strong>'+modelJson.name+'</strong> '
+							});
+					}					
+
+					if (modelJson.id != userId) {
+						if (this.cityCircle == null) {
+							var cOptions = {
+								strokeColor: '#0000FF',
+								strokeOpacity: 0.8,
+								strokeWeight: 2,
+								fillColor: '#0000FF',
+								fillOpacity: 0.35,
+								map: map,
+								center: new google.maps.LatLng(modelJson.pos.coords.latitude, modelJson.pos.coords.longitude),
+								radius: Number(modelJson.pos.coords.accuracy),
+							};
+							this.cityCircle = new google.maps.Circle(cOptions);
+						} else {
+							this.cityCircle.setCenter(new google.maps.LatLng(modelJson.pos.coords.latitude, modelJson.pos.coords.longitude));
+						}
 					}
+					
+					
+					if ($('#show-recent').val() == 'Show Recent') {
+						if ((new Date()).getTime() > modelJson.pos.timestamp + (10 * 60 * 1000)) {
+							if (this.colView.getMap() != null) this.colView.setMap(null);
+						} else {
+							if (this.colView.getMap() == null) this.colView.setMap(map);
+						}
+					} else {
+							this.colView.setMap(map);
+					}
+					
 				} else {
 					this.$el.html(this.templateNoPos(modelJson));
 				}
@@ -194,14 +228,17 @@
 			
 			zoomAll: function() {
 					var bounds = new google.maps.LatLngBounds();
-					for (x in this.lablesGMap) {
-						if (this.lablesGMap[x].getMap()) bounds.extend(this.lablesGMap[x].position);
+					for (x in this.nameLiViews) {
+						var view = this.nameLiViews[x];
+						if (view.colView != null) {
+							if (view.colView.getMap()) bounds.extend(view.colView.getPosition());
+						}
 					}
 					map.fitBounds(bounds);
 			},
 			
 			center: function(uId) {
-				map.setCenter(this.lablesGMap[uId].position);
+				map.setCenter(this.nameLiViews[uId].colView.getPosition());
 			},
 			
 			render: function()	{	
@@ -218,7 +255,7 @@
 					}  else {
 						colView.nameLiViews[m.id].render();
 					}
-					
+					/*
 					if (m.get('pos').coords) {
 						var date = new Date(m.get('pos').timestamp);
 						if (!colView.lablesGMap[m.id]) {
@@ -249,7 +286,9 @@
 							colView.lablesGMap[m.id].setMap(map);
 						}
 					}
+					*/
 				});
+				
 				
 				// we should refactor to remove jqmobile references
 				if ($('#map-zoom').val() == 'Zoom All') {
@@ -271,6 +310,39 @@
 			template : _.template( "{{name}}"),
 			render: function(event) {
 				this.$el.html(this.template(this.model.toJSON()));
+				return this;
+			}
+		});
+	
+	
+		V.LocalUserMarker = Backbone.View.extend({
+			initialize: function() {
+				this.model.bind('change', this.render, this);
+				this.model.bind('destroy', this.remove, this);
+				this.cityCircle = null;
+			},
+			
+			render: function(event){
+				var modelJson = this.model.toJSON();
+								
+				if (modelJson.pos != undefined && modelJson.pos.coords != undefined) {
+					if (this.cityCircle == null) {
+						var cOptions = {
+							strokeColor: '#FF0000',
+							strokeOpacity: 0.8,
+							strokeWeight: 2,
+							fillColor: '#FF0000',
+							fillOpacity: 0.35,
+							map: map,
+							center: new google.maps.LatLng(modelJson.pos.coords.latitude, modelJson.pos.coords.longitude),
+							radius: Number(modelJson.pos.coords.accuracy) 
+						};
+						this.cityCircle = new google.maps.Circle(cOptions);
+					} else {
+						this.cityCircle.setCenter(new google.maps.LatLng(modelJson.pos.coords.latitude, modelJson.pos.coords.longitude));
+					}
+				} 
+				
 				return this;
 			}
 		});
@@ -486,10 +558,14 @@
 
 		 // Label specific
 		 var span = this.span_ = document.createElement('span');
-		 span.style.cssText = 'position: relative; left: 0px; top: 0px;' +
+/*		 span.style.cssText = 'position: relative; left: 0px; top: 0px;' +
 							  'white-space: nowrap; border: 1px solid #8B0000; border-bottom: 0px; border-right: 0px;' +
 							  'padding: 2px; padding-left: 4px; padding-right: 5px; background-color:rgba(0,0,0,0.1);'
-
+*/
+		 span.style.cssText = 'position: relative; left: 0px; top: 0px;' +
+							  'white-space: nowrap; border: 1px solid #00CC00;' +
+							  'padding: 4px; background-color:rgba(0,100,0,0.2);'
+							  
 		 var div = this.div_ = document.createElement('div');
 		 div.appendChild(span);
 		 div.style.cssText = 'position: absolute; display: none';
@@ -586,8 +662,10 @@
 			M.user = new M.LocalUser(u);
 			V.name = new V.Name({model: M.user, el: $("#user")});
 			V.nameEdit = new V.NameEdit({model: M.user, el: $("#editname")});
+			V.localUserMarker = new V.LocalUserMarker({model: M.user});
 			V.name.render();
 			V.nameEdit.render();
+			V.localUserMarker.render();
 			watchGPS();	
 		}
 
