@@ -13,9 +13,11 @@ framework backed by [mongoDB](http://www.mongodb.org/) for object persistence.
 
 Running
 ---------
-The default configuration assumes mongoDB is accesable on the local host. To run cd to the root to the project
-and pass app.js to node
+The default configuration assumes mongoDB is accesable on the local host. To run OpenMaps on localhost:3000 
+cd to the project root to the project and pass app.js to node.
 
     node app.js
 (note: I really like using [nodemon](nodemon) for development instead of node)
+
+ 
 
