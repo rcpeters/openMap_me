@@ -57,11 +57,13 @@ io.sockets.on('connection', function (socket) {
 			mapProvider.getUser(data.id, function(error, user) {
 				socket.emit('initUser', JSON.stringify(user));
 				io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
+				socket.set('userId',user.id);
 			});
 		} else {
 			mapProvider.createUser(mapId, function(error, user) {
 				socket.emit('initUser', JSON.stringify(user));
 				io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
+				socket.set('userId',user.id);
 			});
 		}
 	});
@@ -73,6 +75,12 @@ io.sockets.on('connection', function (socket) {
 		mapProvider.updateUser(user, mapId, function (error, user) {
 			if ( error ) console.log( error );
 			else io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
+		});
+	});
+	
+	socket.on('disconnect', function () {
+		socket.get('userId', function (err, userId) {
+			console.log('User' + userId +' disconnected');
 		});
 	});
 });
