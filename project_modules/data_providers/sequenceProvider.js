@@ -74,7 +74,7 @@ SequenceProvider.instance = null;
 
 SequenceProvider.getInstance = function() {
 	console.log("singleton"); 
-	if (this.instance == null) return this.instance = new SequenceProvider('127.0.0.1', 27017);
+	if (this.instance == null) return this.instance = new SequenceProvider(process.env.SEQUENCE_PROVIDER_HOST || '127.0.0.1', process.env.SEQUENCE_PROVIDER_PORT || 27017);
 	else return this.instance;
 };
 

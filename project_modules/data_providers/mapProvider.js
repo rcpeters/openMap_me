@@ -202,7 +202,7 @@ MapProvider.instance = null;
 
 MapProvider.getInstance = function() {
 	console.log("singleton"); 
-	if (this.instance == null) return this.instance = new MapProvider('127.0.0.1', 27017);
+	if (this.instance == null) return this.instance = new MapProvider(process.env.MAP_PROVIDER_HOST || '127.0.0.1', process.env.MAP_PROVIDER_PORT || 27017);
 	else return this.instance;
 };
 

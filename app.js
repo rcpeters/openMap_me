@@ -11,7 +11,7 @@ var express = require('express')
 var app = express();
 
 // map provider is a singlon
-var mapProvider = require('./mapProvider').MapProvider;
+var mapProvider = require('./project_modules/data_providers/mapProvider').MapProvider;
 
 app.configure(function(){
   app.set('port', process.env.PORT || 3000);

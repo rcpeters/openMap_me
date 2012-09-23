@@ -2,7 +2,7 @@
 /*
  * GET home page.
  */
-var mapProvider = require('../mapProvider').MapProvider;
+var mapProvider = require('../project_modules/data_providers/mapProvider').MapProvider;
 var cookieId = 'oMapV3';
  
 exports.index = function(req, res){
