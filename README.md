@@ -2,18 +2,18 @@ OpenMap.me
 =======
 
 OpenMap.me uses GPS enabled browsers to allow people to see where they 
-are. By simply going to oMap.me and sharing a unique url oMap.me will broadcast the location
+are. By simply going to OpenMap.me and sharing a unique url OpenMap.me will broadcast the location
 of any browser viewing the url. Simply show up copy the url and text or email to a friend
 see each others location in real time. 
 
-Environment Requirments
+Environment Requirements
 ----------
 OpenMap.me is a [Node.js](http://nodejs.org/) application written with the [expressjs](http://expressjs.com)
 framework backed by [mongoDB](http://www.mongodb.org/) for object persistence.
 
 Running
 ---------
-The default configuration assumes mongoDB is accesable on the local host. To run OpenMaps on localhost:3000 
+The default configuration assumes mongoDB is accessible on the local host. To run OpenMaps on localhost:3000 
 cd to the project root and pass app.js to node.
 
     node app.js
