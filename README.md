@@ -17,7 +17,7 @@ The default configuration assumes mongoDB is accesable on the local host. To run
 cd to the project root to the project and pass app.js to node.
 
     node app.js
-(note: I really like using [nodemon](nodemon) for development instead of node)
+(note: I really like using [nodemon](https://github.com/remy/nodemon) for development instead of node)
 
  
 
