@@ -11,7 +11,7 @@
     "ejs": "*",
     "forever": "*",
     "mongodb": ">= 0.9.6-7",
-    "mongoose":">=
+    "mongoose":">= 3.1.2",
     "socket.io":"*"
 
 
