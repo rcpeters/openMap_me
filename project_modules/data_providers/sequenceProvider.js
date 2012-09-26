@@ -11,6 +11,7 @@ var SequenceProvider = function(host, port) {
   this.db.open(function(){});
 };
 
+//SequenceProvider gives sequenced id's to Node, which otherwise doesn't have them
 SequenceProvider.prototype.getSCollection = function(collectionName, callback) {
 	this.getCollection(collectionName, callback);
 };
@@ -18,8 +19,7 @@ SequenceProvider.prototype.getSCollection = function(collectionName, callback) {
 
 SequenceProvider.prototype.getCollection = function(collectionName, callback) {
 	this.db.collection(collectionName, function(error, collection) {
-		if ( error ) {
-			console.log( error );		
+		if ( error ) {			console.log("failed to find collection" + collectionName + " errormsg:"+ error );		
 			callback( error );
 			return;
 		} 
