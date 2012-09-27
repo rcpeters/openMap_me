@@ -98,7 +98,7 @@ MapProvider.prototype.createUser = function(mId,callback) {
 
 
 MapProvider.prototype.getUsers = function(mId,callback) {
-	User.find({mapId: mId},function(error, data) {
+	User.find({id: mId},{lean: true},function(error, data) {
 		if ( error ) {
 			console.log( error );
 			callback( error );
