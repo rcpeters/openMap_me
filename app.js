@@ -80,12 +80,17 @@ io.sockets.on('connection', function (socket) {
 	
 	socket.on('disconnect', function () {
 		socket.get('userId', function (err, userId) {
-			console.log('User' + userId +' disconnected');
+                    if (err){
+                        console.log("disconnect error" + err);
+                        console.dir(err);
+                        return;
+                    }
+			console.log('UserId:' + userId +' disconnected');
                         if (!userId) return;
                         
                         mapProvider.getUser(userId, function(error, user) {
                             if (error){
-                                console.log("failed to find user" + userId);
+                                console.log("failed to find user:" + userId);
                                 return;
                             }
                             user.connectStatus = false;
@@ -93,9 +98,6 @@ io.sockets.on('connection', function (socket) {
                             io.sockets.in(user.mapId).emit('userUpdate',JSON.stringify(user));
 			});
                         
-                        //set the user's status to disconnected
-                        io.sockets.in(user.mapId).emit('userUpdate',JSON.stringify(user));
-                        socket.set('userId',user.id);
 		});
 	});
 });

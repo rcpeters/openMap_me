@@ -115,7 +115,6 @@
 				return true;
 			},
 			emitUser: function() {
-				
 				console.log("userUpdate" + this.get('id'));
 				socket.emit('userUpdate', {'user': this, 'mapId': mapId});
 				return true;
@@ -161,14 +160,14 @@
 								map: map,
 								position: new google.maps.LatLng(modelJson.pos.coords.latitude,
                                              modelJson.pos.coords.longitude),
-								text: '<strong>'+modelJson.name+'</strong> '
+								text: '<strong>'+modelJson.name+ 'conn:' +(modelJson.connectStatus) ? 'yes' :'no' +'</strong> '
 							});
 							
 						} else {
 							this.colView.setValues({
 								position: new google.maps.LatLng(modelJson.pos.coords.latitude,
                                              modelJson.pos.coords.longitude),
-								text: '<strong>'+modelJson.name+'</strong> '
+								text: '<strong>'+modelJson.name+ 'conn:'+(modelJson.connectStatus) ? 'yes' :'no'+'</strong> '
 							});
 					}					
 
@@ -654,7 +653,7 @@
 				var users = JSON.parse(data);
 				console.log("usersUpdate");
 
-				for (uX in users) {
+				for (var uX in users) {
 					console.log("updating user" + users[uX].id + " " + users[uX].name);
 					M.userCollection.addUpdate(users[uX]);
 				}
