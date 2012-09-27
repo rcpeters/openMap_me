@@ -226,20 +226,21 @@
 			},
 			
 			zoomAll: function() {
-					var bounds = new google.maps.LatLngBounds();
-					var count = 0;
-					for (x in this.nameLiViews) {
-						var view = this.nameLiViews[x];
-						if (view.colView != null) {
-							count = count + 1;
-							if (view.colView.getMap()) bounds.extend(view.colView.getPosition());
-						}
+				var bounds = new google.maps.LatLngBounds();
+				var count = 0;
+				var view = null;
+				for (x in this.nameLiViews) {
+					var view = this.nameLiViews[x];
+					if (view.colView != null) {
+						count = count + 1;
+						if (view.colView.getMap()) bounds.extend(view.colView.getPosition());
 					}
-					if (count > 1) {
-						map.fitBounds(bounds);
-					} else {
-						this.center(userId);
-					}
+				}
+				if (count > 1) {
+					map.fitBounds(bounds);
+				} else if (count == 1){
+					this.center(view.model.get('id'));
+				}
 			},
 			
 			center: function(uId) {
@@ -598,15 +599,17 @@
         };
         map = new google.maps.Map(document.getElementById('map_canvas'),
             mapOptions);
+			
+		map.setCenter(new google.maps.LatLng(60, 105));
 
 		maxZoomService = new google.maps.MaxZoomService();
 		 
-        // Try HTML5 geolocation
+       /* // Try HTML5 geolocation
         if(navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(function(position) {
             var pos = new google.maps.LatLng(position.coords.latitude,
                                              position.coords.longitude);
-            map.setCenter(pos);
+            map.setCenter(pos); 
           }, function() {
             handleNoGeolocation(true);
           });
@@ -614,6 +617,7 @@
           // Browser doesn't support Geolocation
           handleNoGeolocation(false);
         }
+		*/
     }
 
     function handleNoGeolocation(errorFlag) {
