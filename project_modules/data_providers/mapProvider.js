@@ -1,4 +1,5 @@
 var Db = require('mongodb').Db;
+var mongoose = require('mongoose');
 var Connection = require('mongodb').Connection;
 var Server = require('mongodb').Server;
 var BSON = require('mongodb').BSON;
@@ -6,11 +7,42 @@ var ObjectID = require('mongodb').ObjectID;
 
 var sequenceProvider = require('./sequenceProvider').SequenceProvider;
 
+var User = null; // mongoose model, populated on MapProvider construction
+var Map = null; // mongoose model, populated on MapProvider construction
+
 var MapProvider = function(host, port) {
-  console.log("host is" + host);
-  console.log("port is" + port);
-  this.db= new Db('oMapV1', new Server(host, port, {auto_reconnect: true}, {}));
-  this.db.open(function(){});
+	var version = 'oMapV1';
+	
+	console.log("host is" + host);
+	console.log("port is" + port);
+  
+	// native connection
+	this.db= new Db(version, new Server(host, port, {auto_reconnect: true}, {}));
+	this.db.open(function(){});
+  
+	//mongoose backed collection
+	this.mgDb = mongoose.createConnection("mongodb://" + host + ":" + port + '/mongoose_' + version);
+
+	User = this.mgDb.model('user', new mongoose.Schema({ 
+		mapId: {type: String, required: true},
+		name: {type: String, required: true},
+		connectStatus: { type: Boolean, 'default': true},
+		objectVersion: { type: Number, 'default': 1},
+		pos: { 
+			timestamp:  { type: Date, default: Date.now },
+			coords: {
+				longitude: {type: Number},
+				accuracy: {type: Number},
+				latitude: {type: Number} 
+			} 
+		} 
+	}));
+	
+	Map = this.mgDb.model('map', new mongoose.Schema({ 
+		id: {type: String, required: true},
+		objectVersion: { type: Number, 'default': 1},
+	}));
+
 };
 
 MapProvider.prototype.natoAlfa = [
@@ -66,26 +98,17 @@ MapProvider.prototype.getUCollection = function(callback) {
 MapProvider.prototype.createMap = function(callback) {
     mapProvider = this;
 	sequenceProvider.base36Counter('maps', 'sequence', function(error, seq) {
-			if ( error ) {
-				console.error( error );
-				callback( error );
-			} else {
-				mapProvider.getMCollection(function(error, mapColl) {
-					mapColl.insert({ id:seq.toUpperCase(), objectVersion: '0'}, {safe:true}, function(error, data) {
-						if ( error ) {
-							console.error( error );
-							callback( error );
-							return;
-						}
-						if (!data || !data[0]) {
-							callback("no match for map");
-							return;
-						}
-						var map = data[0];
-						callback(null, map);
-					});
-				});				
-			}
+		if ( error ) {
+			console.error( error );
+			callback( error );
+		} else {	
+			var map = new Map({id: seq.toUpperCase()});
+			map.save(function (err) {
+			if (err) callback( error );// TODO handle the error
+				console.log("testMap testMap testMap testMap testMap testMap testMap testMap testMap ")
+				callback(null, map);
+			});
+		}
 	});
 
 };
@@ -98,7 +121,6 @@ MapProvider.prototype.createUser = function(mId,callback) {
 					console.error( error );
 					callback( error );
 				} else {
-					console.error('user counter is is is is is is is is is is is is' + seq );
 					var mod = (seq - 1) % 26;
 					var multi =  Math.floor( (seq - 1) / 26);
 					userColl.insert({mapId: mId, name: mapProvider.natoAlfa[mod] + ' ' + multi, pos: '', lastUpdate: '', objectVersion: '1'}, {safe:true}, function(error, data) {
@@ -128,23 +150,17 @@ MapProvider.prototype.getUsers = function(mId,callback) {
 };
 
 MapProvider.prototype.getMap = function(mapId, callback) {
-	this.getMCollection(function(error, maps_collection) {
+	Map.findOne({ id: mapId }, function(error, map) {
 		if( error ) {
 			callback(error);
-		} else {
-			maps_collection.findOne({id: mapId}, function(error, map) {
-				if( error ) {
-					callback(error);
-					return;
-				}
-				if (map == null) {
-					callback("maps is null");
-					return;
-				} 
-				callback(null, map);
-			});
+			return;
 		}
-    });
+		if (map == null) {
+			callback("maps is null");
+			return;
+		} 
+		callback(null, map);
+	});
 };
 
 MapProvider.prototype.getUser = function(userId, callback) {
@@ -192,6 +208,8 @@ MapProvider.prototype.updateUser = function(user, mapId, callback) {
 					console.log( error );
 					return;
 				}
+				console.log('update user');
+				console.log(data);
 				callback(null, data);
 			}
 		);
