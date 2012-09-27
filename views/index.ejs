@@ -365,12 +365,19 @@
 				|| newerThen1Min(pos, M.user.get('pos'))
 				|| !sameLatLong(pos, M.user.get('pos'))) {
 				//alert(pos);
-				console.log('ere');
-				console.log(pos.coords);
 				if (pos.coords && pos.coords != undefined && M.appStatus.get('gps') != S_RECIEVING )M.appStatus.set({gps: S_RECIEVING}); 
-				console.log(JSON.stringify(pos.coords));
-				console.log(M.user.get('pos').coords);
-				M.user.set({'pos': pos});
+				M.user.set(
+					{'pos': 
+						{
+							timestamp: pos.timestamp, 
+							coords: {
+								longitude: pos.coords.longitude, 
+								latitude: pos.coords.latitude, 
+								accuracy: pos.coords.accuracy
+							}
+						}
+					} 
+				);
 			}			
 		}
 		
