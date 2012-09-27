@@ -18,7 +18,7 @@
 		}
 		
 		.circle {
-			  border-radius: 50%;
+			  border-radius: 50%; 
 			  width: 20px;
 			  height: 20px; 
 			  opacity:0.4;
@@ -33,7 +33,8 @@
 		
 		var M={}, V={}, C={};
 		var mapId = '<%=map.id%>';
-		var map = <%-JSON.stringify(map)%>;
+		var map = <%-JSON.stringify(map)%>; //something very wrong here!!! google map is also called map
+		var maxZoomService = null;
 		var cookieId = '<%=cookieId%>';
 		var oMapCookie = null;
 		
@@ -592,11 +593,14 @@
     function initializeMaps() {
         var mapOptions = {
           zoom: 6,
+		  disableDefaultUI: true,
           mapTypeId: google.maps.MapTypeId.ROADMAP
         };
         map = new google.maps.Map(document.getElementById('map_canvas'),
             mapOptions);
 
+		maxZoomService = new google.maps.MaxZoomService();
+		 
         // Try HTML5 geolocation
         if(navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(function(position) {
@@ -715,9 +719,43 @@
 				V.nameLis.render();
 			});
 
+			$('#zoom-in').live('click', function() {
+				maxZoomService.getMaxZoomAtLatLng(map.getCenter(),
+					function(response) {
+						if (response.status != google.maps.MaxZoomStatus.OK) {
+						console.log('Error in MaxZoomService');
+						return;
+					} else {
+						if (response.zoom > map.getZoom()) map.setZoom(map.getZoom() + 1);
+					}
+				});
+			});
+			
+			$('#zoom-out').live('click', function() {
+				maxZoomService.getMaxZoomAtLatLng(map.getCenter(),
+					function(response) {
+						if (response.status != google.maps.MaxZoomStatus.OK) {
+						console.log('Error in MaxZoomService');
+						return;
+					} else {
+						if (map.getZoom() > 0) map.setZoom(map.getZoom() - 1);
+					}
+				});
+			});
+
+			$('#g-map-type').live('change', function(e) {
+				var mType = $('#g-map-type').val();
+				if (mType == 'TERRIAN') map.setMapTypeId(google.maps.MapTypeId.TERRAIN); 
+				else if (mType == 'ROADMAP') map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+				else if (mType == 'SATELLITE') map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
+				else if (mType == 'HYBRID') map.setMapTypeId(google.maps.MapTypeId.HYBRID);
+			});
+
 			$('#index').bind('pageshow', function() {
 				V.nameLis.render()//resize();
 			});
+			
+			
 			
 			$(window).resize(resize);
 			$.mobile.loading( 'hide' );
@@ -741,7 +779,19 @@
 				</select>
 			</div>
 			<div data-role="controlgroup" data-type="horizontal" data-mini="true"  style="float: left;">
-				<a href="#status" id="status" data-rel="dialog">Stat</a>
+				<a href="#status" id="status" data-rel="dialog">Status</a>
+			</div>
+			<div data-role="controlgroup" data-type="horizontal" data-mini="true"  style="float: left;">
+				<a href="#" data-role="button" data-mini="true" data-inline="true" id="zoom-in" data-icon="plus" data-iconpos="right">Zoom</a>
+				<a href="#" data-role="button" data-mini="true" data-inline="true" id="zoom-out" data-icon="minus" data-iconpos="notext"></a>
+			</div>
+			<div data-role="controlgroup" data-type="horizontal" data-mini="true"  style="float: left;">
+				<select name="g-map-type" id="g-map-type">
+					<option value="ROADMAP">Roadmap</option>
+					<option value="SATELLITE">Satellite</option>
+					<option value="ROADMAP">Hybrid</option>
+					<option value="SATELLITE">Terrian</option>
+				</select> 
 			</div>
 		</div>		
 		<div data-role="content" style="width: 100%; height: 100%; padding: 0px; margin: 0px;" id="map-content">	
