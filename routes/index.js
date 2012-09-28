@@ -29,7 +29,7 @@ exports.index = function(req, res){
 			} else {
 				mapProvider.getUsers(map.id, function (users) {
 					console.log(users);
-					res.render('index', { title: 'oMap.me', 'map': map, 'users': users, 'cookieId': cookieId});
+					res.render('index', { title: 'Open Map Me', 'map': map, 'users': users, 'cookieId': cookieId});
 				});
 			}
 		});
