@@ -707,58 +707,61 @@
 	}
 	
 	function initJQMBindings() {
-			$('#index').live('pageshow', function() {
-				resize();
-			});
+		$('#index').live('pageshow', function() {
+			resize();
+		});
 		
-			$('#save-button').click( function () {
-			console.log('here' + $('#mapIdEdit').val() + " " + mapId);
-				if ( mapId != $('#mapIdEdit').val()) window.url = "/m" + $('#mapIdEdit').val();
-			});
-			$('#show-recent').bind('change', function() {
-				V.nameLis.render();
-			});
-			$('#map-zoom').bind('change', function() {
-				V.nameLis.render();
-			});
+		$('#save-button').click( function () {
+		    console.log('here' + $('#mapIdEdit').val() + " " + mapId);
+			if ( mapId != $('#mapIdEdit').val()) window.url = "/m" + $('#mapIdEdit').val();
+		});
+		
+		$('#show-recent').bind('change', function() {
+			V.nameLis.render();
+		});
+			
+		$('#map-zoom').bind('change', function() {
+			V.nameLis.render();
+		});
 
-			$('#zoom-in').live('click', function() {
-				maxZoomService.getMaxZoomAtLatLng(map.getCenter(),
-					function(response) {
-						if (response.status != google.maps.MaxZoomStatus.OK) {
+		$('#zoom-in').live('click', function() {
+			maxZoomService.getMaxZoomAtLatLng(map.getCenter(),
+				function(response) {
+					if (response.status != google.maps.MaxZoomStatus.OK) {
 						console.log('Error in MaxZoomService');
 						return;
 					} else {
 						if (response.zoom > map.getZoom()) map.setZoom(map.getZoom() + 1);
 					}
-				});
 			});
+		});
 			
-			$('#zoom-out').live('click', function() {
-				maxZoomService.getMaxZoomAtLatLng(map.getCenter(),
-					function(response) {
-						if (response.status != google.maps.MaxZoomStatus.OK) {
-						console.log('Error in MaxZoomService');
-						return;
-					} else {
-						if (map.getZoom() > 0) map.setZoom(map.getZoom() - 1);
-					}
-				});
+		$('#zoom-out').live('click', function() {
+			maxZoomService.getMaxZoomAtLatLng(map.getCenter(),
+				function(response) {
+					if (response.status != google.maps.MaxZoomStatus.OK) {
+					console.log('Error in MaxZoomService');
+					return;
+				} else {
+					if (map.getZoom() > 0) map.setZoom(map.getZoom() - 1);
+				}
 			});
+		});
 
-			$('#g-map-type').live('change', function(e) {
-				var mType = $('#g-map-type').val();
-				if (mType == 'TERRIAN') map.setMapTypeId(google.maps.MapTypeId.TERRAIN); 
-				else if (mType == 'ROADMAP') map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
-				else if (mType == 'SATELLITE') map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
-				else if (mType == 'HYBRID') map.setMapTypeId(google.maps.MapTypeId.HYBRID);
-			});
+		$('#g-map-type').live('change', function(e) {
+			var mType = $('#g-map-type').val();
+			if (mType == 'TERRIAN') map.setMapTypeId(google.maps.MapTypeId.TERRAIN); 
+			else if (mType == 'ROADMAP') map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+			else if (mType == 'SATELLITE') map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
+			else if (mType == 'HYBRID') map.setMapTypeId(google.maps.MapTypeId.HYBRID);
+		});
 
-			$('#index').bind('pageshow', function() {
-				V.nameLis.render()//resize();
-			});
+		$('#index').bind('pageshow', function() {
+			V.nameLis.render()//resize();
+		});
 	}
 
+	// JQ on page load
 	$(function() {
 		$.mobile.loading( 'show' );
 		resize();
