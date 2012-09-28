@@ -53,11 +53,12 @@ io.sockets.on('connection', function (socket) {
 		
 		//Transmit inited user to everyone
 		if (data.id) {
-			console.log('user id is ' +data.id);
-			mapProvider.getUser(data.id, function(error, user) {
-				socket.emit('initUser', JSON.stringify(user));
-				io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
-				socket.set('userId',user.id);
+			var mapId = data.mapId; 
+			console.log("user update from init");
+			console.log(data);
+			mapProvider.updateUser(data, mapId, function (error, user) {
+				if ( error ) console.log( error );
+				else io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
 			});
 		} else {
 			mapProvider.createUser(mapId, function(error, user) {
