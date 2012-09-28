@@ -58,10 +58,12 @@ io.sockets.on('connection', function (socket) {
 			console.log(data);
 			mapProvider.updateUser(data, mapId, function (error, user) {
 				if ( error ) console.log( error );
-				else io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
+				socket.emit('initUser', JSON.stringify(user));
+				io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
 			});
 		} else {
 			mapProvider.createUser(mapId, function(error, user) {
+				if ( error ) console.log( error );
 				socket.emit('initUser', JSON.stringify(user));
 				io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
 				socket.set('userId',user.id);
