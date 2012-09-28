@@ -85,18 +85,19 @@ io.sockets.on('connection', function (socket) {
                         console.dir(err);
                         return;
                     }
-			console.log('UserId:' + userId +' disconnected');
-                        if (!userId) return;
-                        
-                        mapProvider.getUser(userId, function(error, user) {
-                            if (error){
-                                console.log("failed to find user:" + userId);
-                                return;
-                            }
-                            user.connectStatus = false;
-                            socket.emit('updateUser', JSON.stringify(user));
-                            io.sockets.in(user.mapId).emit('userUpdate',JSON.stringify(user));
-			});
+                    console.log('UserId:' + userId +' disconnected');
+                    if (!userId) return;
+
+                    mapProvider.getUser(userId.toString(), function(error, user) {
+                        if (error){
+                            console.log("failed to find user:" + userId);
+                            console.log(error);
+                            return;
+                        }
+                        user.connectStatus = false;
+                        socket.emit('updateUser', JSON.stringify(user));
+                        io.sockets.in(user.mapId).emit('userUpdate',JSON.stringify(user));
+                    });
                         
 		});
 	});

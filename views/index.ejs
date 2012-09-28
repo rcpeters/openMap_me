@@ -653,7 +653,7 @@
 				var users = JSON.parse(data);
 				console.log("usersUpdate");
 
-				for (var uX in users) {
+				for (uX in users) {
 					console.log("updating user" + users[uX].id + " " + users[uX].name);
 					M.userCollection.addUpdate(users[uX]);
 				}
