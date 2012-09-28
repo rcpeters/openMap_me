@@ -14,6 +14,7 @@ var MapProvider = function(host, port) {
 	var userSchema = new mongoose.Schema(
 		{ 
 			id: {type: String, required: true},
+			mapId: {type: String, required: true},
 			name: {type: String, required: true},
 			connectStatus: { type: Boolean, 'default': true},
 			objectVersion: { type: Number, 'default': 1},
@@ -104,6 +105,8 @@ MapProvider.prototype.getUsers = function(mId,callback) {
 			callback( error );
 			return;
 		}
+		console.log("get users get users get users get users get users ");
+		console.log(data);
 		callback(null, data);
 	});	
 };
