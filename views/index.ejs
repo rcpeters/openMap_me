@@ -161,14 +161,14 @@
 								map: map,
 								position: new google.maps.LatLng(modelJson.pos.coords.latitude,
                                              modelJson.pos.coords.longitude),
-								text: '<strong>'+modelJson.name+ 'conn:' +(modelJson.connectStatus) ? 'yes' :'no' +'</strong> '
+								text: '<strong>'+modelJson.name +'</strong> '
 							});
 							
 						} else {
 							this.colView.setValues({
 								position: new google.maps.LatLng(modelJson.pos.coords.latitude,
                                              modelJson.pos.coords.longitude),
-								text: '<strong>'+modelJson.name+ 'conn:'+(modelJson.connectStatus) ? 'yes' :'no'+'</strong> '
+								text: '<strong>'+modelJson.name+ '</strong> '
 							});
 					}					
 
