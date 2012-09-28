@@ -25,7 +25,7 @@
 		
 		var M={}, V={}, C={};
 		var mapId = '<%=map.id%>';
-		var map = <%-JSON.stringify(map)%>; //something very wrong here!!! google map is also called map
+		var map = {}; // yikes, initalization order is messed up
 		var maxZoomService = null;
 		var cookieId = '<%=cookieId%>';
 		var oMapCookie = null;
@@ -638,78 +638,79 @@
 	// END Google Maps
 
 		
-		function initUser(u) {
-			M.user = new M.LocalUser(u);
-			V.name = new V.Name({model: M.user, el: $("#user")});
-			V.nameEdit = new V.NameEdit({model: M.user, el: $("#editname")});
-			V.localUserMarker = new V.LocalUserMarker({model: M.user});
-			V.name.render();
-			V.nameEdit.render();
-			V.localUserMarker.render();
-			watchGPS();	
-		}
-
-
-		$(function() {
-		
-			socket.on('initUser', function (data) {
-				initUser(JSON.parse(data));
-			});
+	function initUser(u) {
+		M.user = new M.LocalUser(u);
+		V.name = new V.Name({model: M.user, el: $("#user")});
+		V.nameEdit = new V.NameEdit({model: M.user, el: $("#editname")});
+		V.localUserMarker = new V.LocalUserMarker({model: M.user});
+		V.name.render();
+		V.nameEdit.render();
+		V.localUserMarker.render();
+		watchGPS();	
+	}
+	
+	
+	function initSocketIo() {
+		socket.on('initUser', function (data) {
+			initUser(JSON.parse(data));
+		});
 				
-			socket.on('usersUpdate', function (data) {
-				var users = JSON.parse(data);
-				console.log("usersUpdate");
-
+				
+		socket.on('usersUpdate', function (data) {
+		var users = JSON.parse(data);
+		console.log("usersUpdate");
 				for (uX in users) {
 					console.log("updating user" + users[uX].id + " " + users[uX].name);
 					M.userCollection.addUpdate(users[uX]);
 				}
-			});
+		});
 		
-			socket.on('userUpdate', function (data) {
-				var user = JSON.parse(data);
-				console.log("updating user" + user.id + " " + user.name);
-				M.userCollection.addUpdate(user);
-			});
+		
+		socket.on('userUpdate', function (data) {
+			var user = JSON.parse(data);
+			console.log("updating user" + user.id + " " + user.name);
+			M.userCollection.addUpdate(user);
+		});
 
 				
-			socket.on('disconnect', function(data) {
-					console.log('disconnected disconnected disconnected disconnected disconnected disconnected disconnected ');
-					//turnOffWatchGPS();
-					socketIsConn = false;
-					M.appStatus.set({server: S_NOT_CONNECTED});
-				});
+		socket.on('disconnect', function(data) {
+			console.log('disconnected disconnected disconnected disconnected disconnected disconnected disconnected ');
+			//turnOffWatchGPS();
+			socketIsConn = false;
+			M.appStatus.set({server: S_NOT_CONNECTED});
+		});
 
-			socket.on('connect', function(data) {
-				console.log('connected connected connected connected connected connected connected ');
-				socketIsConn = true;
-				M.appStatus.set({server: S_CONNECTED});
-				if (!M.user) socket.emit("initUser", {'mapId': mapId, 'id':userId});
-				else M.user.emitUser();
-			});		
-
-			$.mobile.loading( 'show' );
-			resize();
+		socket.on('connect', function(data) {
+			console.log('connected connected connected connected connected connected connected ');
+			socketIsConn = true;
+			M.appStatus.set({server: S_CONNECTED});
+			if (!M.user) socket.emit("initUser", {'mapId': mapId, 'id':userId});
+			else M.user.emitUser();
+		});		
+	}
+		
+	function initBackboneObjects() {
+		M.userCollection = new M.Users();
+		V.nameLis = new V.NameLis({collection: M.userCollection, el: $("#userColl")});
+		M.appStatus = new M.AppStatus({ gps: S_NOT_RECIEVING, server: S_NOT_CONNECTED});
+		V.statusBtn = new V.StatusBtn ({ model: M.appStatus, el: $("#status")});
+		V.statusBtn.render();
+		V.statusCnt = new V.StatusCnt ({ model: M.appStatus, el: $("#status-content")});
+		V.statusCnt.render();
+	}
+		
+	function initUserId() {
+		var cookie = getOMapCookie();
+		if (cookie) {
+			if (cookie.maps[mapId]) userId = cookie.maps[mapId].uId;
+		}		
+	}
+	
+	function initJQMBindings() {
 			$('#index').live('pageshow', function() {
 				resize();
 			});
-			
-			var cookie = getOMapCookie();
-			if (cookie) {
-				if (cookie.maps[mapId]) userId = cookie.maps[mapId].uId;
-			}
-			M.userCollection = new M.Users();
-			V.nameLis = new V.NameLis({collection: M.userCollection, el: $("#userColl")});
-			M.appStatus = new M.AppStatus({ gps: S_NOT_RECIEVING, server: S_NOT_CONNECTED});
-			V.statusBtn = new V.StatusBtn ({ model: M.appStatus, el: $("#status")});
-			V.statusBtn.render();
-			V.statusCnt = new V.StatusCnt ({ model: M.appStatus, el: $("#status-content")});
-			V.statusCnt.render();
-			
-			console.log("initUser via server");
-			
-			initializeMaps();
-			
+		
 			$('#save-button').click( function () {
 			console.log('here' + $('#mapIdEdit').val() + " " + mapId);
 				if ( mapId != $('#mapIdEdit').val()) window.url = "/m" + $('#mapIdEdit').val();
@@ -756,14 +757,21 @@
 			$('#index').bind('pageshow', function() {
 				V.nameLis.render()//resize();
 			});
-			
-			
-			
-			$(window).resize(resize);
-			$.mobile.loading( 'hide' );
-						
-		});		
-	 </script>
+	}
+
+	$(function() {
+		$.mobile.loading( 'show' );
+		resize();
+		initSocketIo();
+		initBackboneObjects();
+		initUserId();		
+		initializeMaps();
+		initJQMBindings();
+		$(window).resize(resize);
+		$.mobile.loading( 'hide' );					
+	});		
+	
+	</script>
   </head>
   <body>
   
