@@ -24,7 +24,7 @@
 		var S_NOT_RECIEVING = 'not receiving';
 		
 		var M={}, V={}, C={};
-		var mapId = '<%=map.id%>';
+		var mapId = window.location.pathname.length > 3 ? window.location.pathname.substring(3).toUpperCase() : null;
 		var map = {}; // yikes, initalization order is messed up
 		var maxZoomService = null;
 		var cookieId = '<%=cookieId%>';
@@ -36,9 +36,8 @@
 		var userId = null;
 		var watchId;
 		var geoLoc;
-		
-		
 
+		
 		// make underscore js use {{ }}
 		_.templateSettings = {
 			interpolate : /\{\{(.+?)\}\}/g
@@ -142,8 +141,6 @@
 			
 			render: function(event){
 				var modelJson = this.model.toJSON();
-
-
 				
 				if (modelJson.pos != undefined && modelJson.pos.coords != undefined) {
 					this.$el.html(this.templateHasPos(modelJson));
@@ -313,27 +310,7 @@
 				return this;
 			}
 		});
-	
-		// just use View to update jqm object
-		V.NameEdit = Backbone.View.extend({
-			initialize: function() {
-				this.model.bind('change', this.render, this);
-			},
 			
-			events: {
-				 "change":   "saveName",
-			},
-			
-			render: function(event){
-				this.$el.val(this.model.get("name"));
-				return this;
-			},
-			
-			saveName: function(event) {
-				this.model.set({'name':this.$el.val()}); 
-			}
-		});
-		
 		function watchGPS() {
 			if(navigator.geolocation){
 				// timeout at 60000 milliseconds (60 seconds)
@@ -641,10 +618,8 @@
 	function initUser(u) {
 		M.user = new M.LocalUser(u);
 		V.name = new V.Name({model: M.user, el: $("#user")});
-		V.nameEdit = new V.NameEdit({model: M.user, el: $("#editname")});
 		V.localUserMarker = new V.LocalUserMarker({model: M.user});
 		V.name.render();
-		V.nameEdit.render();
 		V.localUserMarker.render();
 		watchGPS();	
 	}
@@ -653,8 +628,7 @@
 	function initSocketIo() {
 		socket.on('initUser', function (data) {
 			initUser(JSON.parse(data));
-		});
-				
+		});		
 				
 		socket.on('usersUpdate', function (data) {
 		var users = JSON.parse(data);
@@ -665,13 +639,11 @@
 				}
 		});
 		
-		
 		socket.on('userUpdate', function (data) {
 			var user = JSON.parse(data);
 			console.log("updating user" + user.id + " " + user.name);
 			M.userCollection.addUpdate(user);
 		});
-
 				
 		socket.on('disconnect', function(data) {
 			console.log('disconnected disconnected disconnected disconnected disconnected disconnected disconnected ');
@@ -710,12 +682,7 @@
 		$('#index').live('pageshow', function() {
 			resize();
 		});
-		
-		$('#save-button').click( function () {
-		    console.log('here' + $('#mapIdEdit').val() + " " + mapId);
-			if ( mapId != $('#mapIdEdit').val()) window.url = "/m" + $('#mapIdEdit').val();
-		});
-		
+			
 		$('#show-recent').bind('change', function() {
 			V.nameLis.render();
 		});
@@ -756,19 +723,35 @@
 			else if (mType == 'HYBRID') map.setMapTypeId(google.maps.MapTypeId.HYBRID);
 		});
 
-		$('#index').bind('pageshow', function() {
+		$('#index').live('pageshow', function() {
 			V.nameLis.render()//resize();
 		});
+
+		$('#inputs').live('pageshow', function() {
+			$("#inputs #editname").val(M.user.get('name'));
+		});
+		
+		$('#inputs #editname').live('change', function() {
+			M.user.set({ name: $('#editname').val() });
+		});
+		
+		$('#inputs #save-button').live('click', function () {
+		    console.log('here' + $('#mapIdEdit').val() + " " + mapId);
+			if ( mapId != $('#mapIdEdit').val()) {window.location.href = 'http://' + location.host + "/m/" + $('#mapIdEdit').val()};
+		});
+	
+		
+		
 	}
 
 	// JQ on page load
 	$(function() {
 		$.mobile.loading( 'show' );
 		resize();
-		initSocketIo();
-		initBackboneObjects();
 		initUserId();		
 		initializeMaps();
+		initSocketIo();
+		initBackboneObjects();
 		initJQMBindings();
 		$(window).resize(resize);
 		$.mobile.loading( 'hide' );					
