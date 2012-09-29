@@ -37,37 +37,45 @@ app.get('/m/*', routes.index);
 var server = http.createServer(app).listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));
 });
+
+function initUser(data, socket) {
+	socket.join(data.mapId);
+	//Transmit other users back
+	mapProvider.getUsers(data.mapId, function(error, users) {
+		socket.emit('usersUpdate',JSON.stringify(users));
+	});
+		
+	//Transmit inited data to everyone	
+	if (data.id) {
+		console.log("user update from init");
+		console.log(data);
+		mapProvider.getUser(data.id, function (error, user) {
+			if ( error ) console.log( error );
+			socket.emit('initUser', JSON.stringify(user));
+			io.sockets.in(data.mapId).emit('userUpdate',JSON.stringify(user));
+		});
+	} else {
+		mapProvider.createUser(data.mapId, function(error, user) {
+			if ( error ) console.log( error );
+			socket.emit('initUser', JSON.stringify(user));
+			io.sockets.in(data.mapId).emit('userUpdate',JSON.stringify(user));
+			socket.set('userId',user.id);
+		});
+	}
+}
  
 var io = require('socket.io').listen(server);
 
 io.sockets.on('connection', function (socket) {
 	
-	socket.on('initUser', function(user) {
-		socket.join(user.mapId);
-	
-		//Transmit other users back
-		mapProvider.getUsers(user.mapId, function(error, users) {
-			socket.emit('usersUpdate',JSON.stringify(users));
+	socket.on('initUser', function(data) {
+		if (data.mapId) initUser(data, socket);
+		else mapProvider.createMap(function (error, map) {
+		if (error) console.log(error);
+			data.mapId = map.id;
+			initUser(data, socket);
 		});
 		
-		//Transmit inited user to everyone
-		
-		if (user.id) {
-			console.log("user update from init");
-			console.log(user);
-			mapProvider.updateUser(user, function (error, user) {
-				if ( error ) console.log( error );
-				socket.emit('initUser', JSON.stringify(user));
-				io.sockets.in(user.mapId).emit('userUpdate',JSON.stringify(user));
-			});
-		} else {
-			mapProvider.createUser(user.mapId, function(error, user) {
-				if ( error ) console.log( error );
-				socket.emit('initUser', JSON.stringify(user));
-				io.sockets.in(user.mapId).emit('userUpdate',JSON.stringify(user));
-				socket.set('userId',user.id);
-			});
-		}
 	});
   
 	socket.on('userUpdate', function (data) {
