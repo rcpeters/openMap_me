@@ -42,30 +42,30 @@ var io = require('socket.io').listen(server);
 
 io.sockets.on('connection', function (socket) {
 	
-	socket.on('initUser', function(data) {
-		var mapId = data.mapId;
-		socket.join(mapId);
+	socket.on('initUser', function(user) {
+		var mapId = user.mapId;
+		socket.join(user.mapId);
 	
 		//Transmit other users back
-		mapProvider.getUsers(data.mapId, function(error, users) {
+		mapProvider.getUsers(mapId, function(error, users) {
 			socket.emit('usersUpdate',JSON.stringify(users));
 		});
 		
 		//Transmit inited user to everyone
-		if (data.id) {
-			var mapId = data.mapId; 
+		
+		if (user.id) {
 			console.log("user update from init");
-			console.log(data);
-			mapProvider.updateUser(data, mapId, function (error, user) {
+			console.log(user);
+			mapProvider.updateUser(user, function (error, user) {
 				if ( error ) console.log( error );
 				socket.emit('initUser', JSON.stringify(user));
-				io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
+				io.sockets.in(user.mapId).emit('userUpdate',JSON.stringify(user));
 			});
 		} else {
 			mapProvider.createUser(mapId, function(error, user) {
 				if ( error ) console.log( error );
 				socket.emit('initUser', JSON.stringify(user));
-				io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
+				io.sockets.in(user.mapId).emit('userUpdate',JSON.stringify(user));
 				socket.set('userId',user.id);
 			});
 		}
@@ -73,11 +73,10 @@ io.sockets.on('connection', function (socket) {
   
 	socket.on('userUpdate', function (data) {
 		var user = data.user;
-		var mapId = data.mapId; 
 		console.log("user update");
-		mapProvider.updateUser(user, mapId, function (error, user) {
+		mapProvider.updateUser(user, function (error, user) {
 			if ( error ) console.log( error );
-			else io.sockets.in(mapId).emit('userUpdate',JSON.stringify(user));
+			else io.sockets.in(user.mapId).emit('userUpdate',JSON.stringify(user));
 		});
 	});
 	

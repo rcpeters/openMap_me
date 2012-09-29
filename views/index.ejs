@@ -729,6 +729,7 @@
 
 		$('#inputs').live('pageshow', function() {
 			$("#inputs #editname").val(M.user.get('name'));
+			$("#inputs #mapIdEdit").val(mapId);
 		});
 		
 		$('#inputs #editname').live('change', function() {
@@ -808,7 +809,7 @@
 	<div data-role="page" id="inputs">
 		<div data-role="content">
 			Change Map ID:
-			<input name="mapIdEdit" data-mini="true" data-inline="true" id="mapIdEdit" value="<%=map.id%>" />
+			<input name="mapIdEdit" data-mini="true" data-inline="true" id="mapIdEdit" value="" />
 			<br />
 			Choose a different id: 
 			<input name="editname" data-mini="true" data-inline="true" id="editname" value="" />

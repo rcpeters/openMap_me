@@ -145,7 +145,9 @@ MapProvider.prototype.getUser = function(userId, callback) {
 };
 
 
-MapProvider.prototype.updateUser = function(user, mapId, callback) {
+MapProvider.prototype.updateUser = function(user, callback) {
+	if (!user.mapId) throw "Update user mapId is required";
+	var mapId = user.mapId;
 	var userId = user.id;
 	delete(user._id); // don't allow modification
 	delete(user.id); // don't allow modification
