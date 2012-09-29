@@ -43,11 +43,10 @@ var io = require('socket.io').listen(server);
 io.sockets.on('connection', function (socket) {
 	
 	socket.on('initUser', function(user) {
-		var mapId = user.mapId;
 		socket.join(user.mapId);
 	
 		//Transmit other users back
-		mapProvider.getUsers(mapId, function(error, users) {
+		mapProvider.getUsers(user.mapId, function(error, users) {
 			socket.emit('usersUpdate',JSON.stringify(users));
 		});
 		
@@ -62,7 +61,7 @@ io.sockets.on('connection', function (socket) {
 				io.sockets.in(user.mapId).emit('userUpdate',JSON.stringify(user));
 			});
 		} else {
-			mapProvider.createUser(mapId, function(error, user) {
+			mapProvider.createUser(user.mapId, function(error, user) {
 				if ( error ) console.log( error );
 				socket.emit('initUser', JSON.stringify(user));
 				io.sockets.in(user.mapId).emit('userUpdate',JSON.stringify(user));
