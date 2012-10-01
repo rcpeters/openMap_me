@@ -6,7 +6,6 @@
     <script src="/socket.io/socket.io.js"></script> 
 	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0-rc.2/jquery.mobile-1.2.0-rc.2.min.css" />
 	<script src="http://code.jquery.com/jquery-1.8.1.min.js"></script>
-	<script src="/javascripts/jquery.mobile.router.js"></script>
 	<script src="http://code.jquery.com/mobile/1.2.0-rc.2/jquery.mobile-1.2.0-rc.2.min.js"></script>
     <script src="/javascripts/underscore-min.js"></script>
     <script src="/javascripts/backbone-min.js"></script>
@@ -37,29 +36,6 @@
 		var userId = null;
 		var watchId;
 		var geoLoc;
-
-		/*
-		C.renderPage = function (type, match, ui) {
-			console.log('render Page - ' + type, 'match: ' + match);
-		};
-		
-		C.setMapId = function (type, match, ui) {
-			alert('map: ' + match);
-			mapId = match;
-			console.log('Set Map Page - ' + type, 'match: ' + match);
-		};		
-
-		// https://github.com/azicchetti/jquerymobile-router
-		C.router=new $.mobile.Router({
-			//"#map": function(){ console.log("INDEX!"); },
-			"#map([?].*)?": {
-				handler: C.setMapId, events: "bs"
-			},
-			".": {
-				handler: C.renderPage, events: "bc"
-			}
-		});
-		*/
 		
 		// make underscore js use {{ }}
 		_.templateSettings = {
