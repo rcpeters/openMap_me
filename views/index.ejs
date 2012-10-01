@@ -629,7 +629,6 @@
 		
 	function initUser(u) {
 		if (mapId == null) mapId = u.mapId;
-		alert(mapId);
 		M.user = new M.LocalUser(u);
 		V.name = new V.Name({model: M.user, el: $("#user")});
 		V.localUserMarker = new V.LocalUserMarker({model: M.user});
@@ -747,13 +746,19 @@
 			M.user.set({ name: $('#editname').val() });
 		});
 		
-		$('#inputs #save-button').live('click', function () {
+		$('#inputs #change-map-button').live('click', function () {
 		    console.log('here' + $('#mapIdEdit').val() + " " + mapId);
 			if ( mapId != $('#mapIdEdit').val()) {
 				var redir = 'http://' + location.host + "/m/" + $('#mapIdEdit').val()
 				window.location.href = 'http://' + location.host + "/map_" + $('#mapIdEdit').val();
 				return false;
 			};
+		});
+
+		$('#inputs #new-map-button').live('click', function () {
+			var redir = 'http://' + location.host + "/m/" + $('#mapIdEdit').val()
+			window.location.href = 'http://' + location.host + "/createMap";
+			return false;
 		});
 		
 	}
@@ -821,12 +826,15 @@
 	</div>
 	<div data-role="page" id="inputs">
 		<div data-role="content">
+			Create New Map:<br />
+			<a href="" data-role="button" data-mini="true" data-inline="true" id="new-map-button">New Map</a><br />
 			Change Map ID:
 			<input name="mapIdEdit" data-mini="true" data-inline="true" id="mapIdEdit" value="" />
+			<a href="#" data-role="button" data-mini="true" data-inline="true" id="change-map-button">Change Map</a>
 			<br />
-			Choose a different id: 
+			Change your id for this map: 
 			<input name="editname" data-mini="true" data-inline="true" id="editname" value="" />
-			<a href="#" data-role="button" data-mini="true" data-inline="true" data-rel="back" id="save-button">Save</a>
+			<a href="#" data-role="button" data-mini="true" data-inline="true" data-rel="back" id="change-id-button">Save</a>
 		</div>
 	</div>
 	<div data-role="page" id="list">

@@ -27,12 +27,8 @@ exports.index = function(req, res){
 					console.log("bad request sent to new map" + newMap.id);
 					res.redirect('/map_' + newMap.id);
 				});
-			} else {
-				mapProvider.getUsers(map.id, function (users) {
-					console.log(users);
-					res.render('index', {});
-				});
-			}
+			} 
+			else res.render('index', {});
 		});
 	}
 };
