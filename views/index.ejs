@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= title %></title>
+    <title>Open Map Me</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <script src="/socket.io/socket.io.js"></script> 
 	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0-rc.2/jquery.mobile-1.2.0-rc.2.min.css" />
@@ -27,7 +27,7 @@
 		var mapId = window.location.pathname.length > 3 ? window.location.pathname.substring(3).toUpperCase() : null;
 		var map = {}; // yikes, initalization order is messed up
 		var maxZoomService = null;
-		var cookieId = '<%=cookieId%>';
+		var cookieId = 'oMapV3';
 		var oMapCookie = null;
 		
 		var socket = io.connect();
@@ -616,6 +616,8 @@
 
 		
 	function initUser(u) {
+		if (mapId == null) mapId = u.mapId;
+		alert(mapId);
 		M.user = new M.LocalUser(u);
 		V.name = new V.Name({model: M.user, el: $("#user")});
 		V.localUserMarker = new V.LocalUserMarker({model: M.user});
