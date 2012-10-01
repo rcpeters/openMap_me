@@ -6,6 +6,7 @@
     <script src="/socket.io/socket.io.js"></script> 
 	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0-rc.2/jquery.mobile-1.2.0-rc.2.min.css" />
 	<script src="http://code.jquery.com/jquery-1.8.1.min.js"></script>
+	<script src="/javascripts/jquery.mobile.router.js"></script>
 	<script src="http://code.jquery.com/mobile/1.2.0-rc.2/jquery.mobile-1.2.0-rc.2.min.js"></script>
     <script src="/javascripts/underscore-min.js"></script>
     <script src="/javascripts/backbone-min.js"></script>
@@ -24,7 +25,7 @@
 		var S_NOT_RECIEVING = 'not receiving';
 		
 		var M={}, V={}, C={};
-		var mapId = window.location.pathname.length > 3 ? window.location.pathname.substring(3).toUpperCase() : null;
+		var mapId = window.location.pathname.length > 4 ? window.location.pathname.substring(5).toUpperCase() : null;
 		var map = {}; // yikes, initalization order is messed up
 		var maxZoomService = null;
 		var cookieId = 'oMapV3';
@@ -37,6 +38,28 @@
 		var watchId;
 		var geoLoc;
 
+		/*
+		C.renderPage = function (type, match, ui) {
+			console.log('render Page - ' + type, 'match: ' + match);
+		};
+		
+		C.setMapId = function (type, match, ui) {
+			alert('map: ' + match);
+			mapId = match;
+			console.log('Set Map Page - ' + type, 'match: ' + match);
+		};		
+
+		// https://github.com/azicchetti/jquerymobile-router
+		C.router=new $.mobile.Router({
+			//"#map": function(){ console.log("INDEX!"); },
+			"#map([?].*)?": {
+				handler: C.setMapId, events: "bs"
+			},
+			".": {
+				handler: C.renderPage, events: "bc"
+			}
+		});
+		*/
 		
 		// make underscore js use {{ }}
 		_.templateSettings = {
@@ -439,20 +462,9 @@
 			return null;
 		}
 				
-		function resize() {
-			//var navBarHeight = $('#map-nav-bar').height();
-			//var mapControlHeight = $('#map-controls').height();
-			//var height = $(window).height() - navBarHeight - mapControlHeight  - 40;
-			//var width = $('#map-content').width();
-			//var paddingTop = $('#index').css("padding-top");
-			//var paddingBottom = $('#index').css("padding-bottom");
-			//var height2 = $(window).height() - Number(paddingTop.substring(0,paddingTop.length-2)) - Number(paddingBottom.substring(0,paddingBottom.length-2));
-			//alert(paddingTop.substring(0,paddingTop.length-2) + ' ' + mapControlHeight);
-			
+		function resize() {			
 			$('#map_canvas').css('height',$(window).height()+'px');
 			$('#map_canvas').css('width',$(window).width()+'px');
-			//$('#map_canvas').height($(window).height() - navBarHeight - mapControlHeight);
-			//$('#map_canvas').width($('#map-content').width());
 			google.maps.event.trigger(map, "resize");
 			if (V.nameLis) V.nameLis.render();
 		}
@@ -648,14 +660,11 @@
 		});
 				
 		socket.on('disconnect', function(data) {
-			console.log('disconnected disconnected disconnected disconnected disconnected disconnected disconnected ');
-			//turnOffWatchGPS();
 			socketIsConn = false;
 			M.appStatus.set({server: S_NOT_CONNECTED});
 		});
 
 		socket.on('connect', function(data) {
-			console.log('connected connected connected connected connected connected connected ');
 			socketIsConn = true;
 			M.appStatus.set({server: S_CONNECTED});
 			if (!M.user) socket.emit("initUser", {'mapId': mapId, 'id':userId});
@@ -681,7 +690,7 @@
 	}
 	
 	function initJQMBindings() {
-		$('#index').live('pageshow', function() {
+		$('#map').live('pageshow', function() {
 			resize();
 		});
 			
@@ -725,7 +734,7 @@
 			else if (mType == 'HYBRID') map.setMapTypeId(google.maps.MapTypeId.HYBRID);
 		});
 
-		$('#index').live('pageshow', function() {
+		$('#map').live('pageshow', function() {
 			V.nameLis.render()//resize();
 		});
 
@@ -740,10 +749,12 @@
 		
 		$('#inputs #save-button').live('click', function () {
 		    console.log('here' + $('#mapIdEdit').val() + " " + mapId);
-			if ( mapId != $('#mapIdEdit').val()) {window.location.href = 'http://' + location.host + "/m/" + $('#mapIdEdit').val()};
+			if ( mapId != $('#mapIdEdit').val()) {
+				var redir = 'http://' + location.host + "/m/" + $('#mapIdEdit').val()
+				window.location.href = 'http://' + location.host + "/map_" + $('#mapIdEdit').val();
+				return false;
+			};
 		});
-	
-		
 		
 	}
 
@@ -764,7 +775,7 @@
   </head>
   <body>
   
-	<div id="index" data-role="page">
+	<div id="map" data-role="page">
 		<div id="map-controls" data-role="header" data-theme="a" class="ui-bar" data-position="fixed"  data-fullscreen="true">
 			<div data-role="controlgroup" data-type="horizontal" data-mini="true"  style="float: left;">
 				<select name="show-recent" id="show-recent">

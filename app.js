@@ -31,6 +31,7 @@ app.configure('development', function(){
 });
 
 app.get('/', routes.index);
+app.get('/map*', routes.index);
 app.get('/m', routes.index);
 app.get('/m/*', routes.index);
 
